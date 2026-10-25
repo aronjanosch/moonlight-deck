@@ -23,5 +23,15 @@
         <file>gui/NavigableDialog.qml</file>
         <file>gui/CenteredGridView.qml</file>
         <file>gui/CliPair.qml</file>
+        <file>gui/couch/qmldir</file>
+        <file>gui/couch/CouchTheme.qml</file>
+        <file>gui/couch/CouchHome.qml</file>
+        <file>gui/couch/CouchCover.qml</file>
+        <file>gui/couch/CouchBadge.qml</file>
+        <file>gui/couch/CouchBackdrop.qml</file>
+        <file>gui/couch/CouchGlyph.qml</file>
+        <file>gui/couch/CouchHint.qml</file>
+        <file>gui/couch/CouchActionSheet.qml</file>
+        <file>gui/couch/CouchTextPrompt.qml</file>
     </qresource>
 </RCC>

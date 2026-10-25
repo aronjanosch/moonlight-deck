@@ -2609,6 +2609,22 @@ Flickable {
                 }
 
                 CheckBox {
+                    id: couchUiCheck
+                    width: parent.width
+                    text: qsTr("Use the controller-first couch interface")
+                    font.pointSize: 12
+                    checked: StreamingPreferences.couchUi
+                    onCheckedChanged: {
+                        StreamingPreferences.couchUi = checked
+                    }
+
+                    ToolTip.delay: 1000
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Shows hosts and games in a full-screen layout built for gamepads and handhelds like the Steam Deck. Takes effect after restarting Moonlight.")
+                }
+
+                CheckBox {
                     id: singleControllerCheck
                     width: parent.width
                     text: qsTr("Force gamepad #1 always connected")
