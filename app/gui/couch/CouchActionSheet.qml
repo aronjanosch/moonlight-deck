@@ -22,6 +22,11 @@ Popup {
         open()
     }
 
+    // Takes focus back, e.g. from a popup that closed after this opened
+    function refocus() {
+        list.forceActiveFocus()
+    }
+
     function trigger(index) {
         if (index < 0 || index >= actions.length) {
             return

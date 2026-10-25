@@ -33,6 +33,7 @@ private slots:
     void stockSunshineAdvertisesNothing()
     {
         const auto caps = ApolloCapabilities::fromServerInfo(fixture("serverinfo-sunshine.xml"));
+        QVERIFY(!caps.permissionAdvertised);
         QVERIFY(!caps.permissionsKnown);
         QCOMPARE(caps.permissions, uint32_t(0));
         QVERIFY(caps.serverCommands.isEmpty());
@@ -77,6 +78,8 @@ private slots:
     void zeroOverPlainHttpIsUnknown()
     {
         const auto caps = ApolloCapabilities::fromServerInfo(fixture("serverinfo-apollo-http.xml"));
+        // Still identifies an Apollo-family host before pairing
+        QVERIFY(caps.permissionAdvertised);
         QVERIFY(!caps.permissionsKnown);
         QVERIFY(!caps.allows(Permission::ClipboardRead));
         QVERIFY(!caps.denies(Permission::ClipboardRead));

@@ -29,6 +29,9 @@ struct ApolloCapabilities
         Launch = 1u << 26,
     };
 
+    // Apollo and Vibepollo send <Permission> to every client, so its mere
+    // presence identifies a host that accepts one-time PIN pairing.
+    bool permissionAdvertised = false;
     // Hosts answer plain HTTP with a placeholder 0, and stock hosts send no
     // mask at all. Only a mask from a paired (HTTPS) answer is meaningful.
     bool permissionsKnown = false;
@@ -74,6 +77,7 @@ struct ApolloCapabilities
             else result.virtualDisplayHdrCapable = flag;
         }
         if (xml.hasError()) return ApolloCapabilities{};
+        result.permissionAdvertised = hasPermission;
         if (!validPermission) result.permissions = 0;
         result.permissionsKnown = hasPermission && validPermission && (result.permissions != 0 || paired);
         return result;

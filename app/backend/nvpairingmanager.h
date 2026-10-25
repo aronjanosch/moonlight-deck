@@ -3,6 +3,8 @@
 #include "identitymanager.h"
 #include "nvhttp.h"
 
+#include <optional>
+
 #include <openssl/x509.h>
 #include <openssl/evp.h>
 
@@ -24,7 +26,15 @@ public:
     PairState
     pair(QString appVersion, QString pin, QSslCertificate& serverCert);
 
+    // Pairs with a one-time PIN and passphrase created in an Apollo or
+    // Vibepollo host's web UI instead of a PIN shown to the user
+    PairState
+    pairWithOtp(QString appVersion, QString pin, QString passphrase, QSslCertificate& serverCert);
+
 private:
+    PairState
+    pair(QString appVersion, QString pin, const std::optional<QString>& otpPassphrase, QSslCertificate& serverCert);
+
     QByteArray
     generateRandomBytes(int length);
 

@@ -182,6 +182,7 @@ NvComputer::NvComputer(NvHTTP& http, QString serverInfo)
     this->frameLimiterFpsLimitMilliHz = limiter.fpsLimitMilliHz;
 
     const auto apollo = ApolloCapabilities::fromServerInfo(serverInfo);
+    this->otpPairingSupported = apollo.permissionAdvertised;
     this->apolloPermissionsKnown = apollo.permissionsKnown;
     this->apolloPermissions = apollo.permissions;
     this->serverCommands = apollo.serverCommands;
@@ -593,6 +594,7 @@ bool NvComputer::update(const NvComputer& that)
     ASSIGN_IF_CHANGED(frameLimiterEnabled);
     ASSIGN_IF_CHANGED(virtualDisplayFrameLimiterEnabled);
     ASSIGN_IF_CHANGED(frameLimiterFpsLimitMilliHz);
+    ASSIGN_IF_CHANGED(otpPairingSupported);
     ASSIGN_IF_CHANGED(apolloPermissionsKnown);
     ASSIGN_IF_CHANGED(apolloPermissions);
     ASSIGN_IF_CHANGED(serverCommands);

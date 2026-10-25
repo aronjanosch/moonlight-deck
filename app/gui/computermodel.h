@@ -21,6 +21,7 @@ class ComputerModel : public QAbstractListModel
         VirtualDisplayCapableRole,
         VirtualDisplayReadyRole,
         VirtualDisplayHdrCapableRole,
+        OtpPairingSupportedRole,
     };
 
 public:
@@ -40,6 +41,10 @@ public:
     Q_INVOKABLE QString generatePinString();
 
     Q_INVOKABLE void pairComputer(int computerIndex, QString pin);
+
+    // Returns a message for an invalid PIN or passphrase, or an empty
+    // string once pairing has started
+    Q_INVOKABLE QString pairComputerWithOtp(int computerIndex, QString pin, QString passphrase);
 
     Q_INVOKABLE void testConnectionForComputer(int computerIndex);
 

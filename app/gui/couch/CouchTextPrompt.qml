@@ -10,9 +10,17 @@ Popup {
     property string title
     property string placeholder
     property var acceptHandler: null
+    property bool keepSpaces: false
 
-    function ask(newTitle, initialText, newPlaceholder, acceptFn) {
+    // options.secret masks the text, options.digits asks for a number
+    function ask(newTitle, initialText, newPlaceholder, acceptFn, options) {
+        var opts = options || {}
         title = newTitle
+        keepSpaces = !!opts.secret
+        field.echoMode = opts.secret ? TextInput.Password : TextInput.Normal
+        field.inputMethodHints = opts.digits ? Qt.ImhDigitsOnly :
+                                 opts.secret ? (Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText | Qt.ImhSensitiveData | Qt.ImhHiddenText) :
+                                               (Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText)
         field.text = initialText || ""
         placeholder = newPlaceholder || ""
         acceptHandler = acceptFn
@@ -20,7 +28,7 @@ Popup {
     }
 
     function accept() {
-        var value = field.text.trim()
+        var value = keepSpaces ? field.text : field.text.trim()
         var fn = acceptHandler
         close()
         if (value !== "" && fn) {
@@ -40,6 +48,9 @@ Popup {
     Overlay.modal: Rectangle {
         color: "#a0000000"
     }
+
+    // Don't keep a passphrase around once the prompt is gone
+    onClosed: field.text = ""
 
     onOpened: {
         field.forceActiveFocus()

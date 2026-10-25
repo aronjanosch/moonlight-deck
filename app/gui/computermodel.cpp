@@ -1,5 +1,6 @@
 #include "computermodel.h"
 #include "onlinecomputerentries.h"
+#include "backend/otppairing.h"
 
 #include <QThreadPool>
 
@@ -57,6 +58,8 @@ QVariant ComputerModel::data(const QModelIndex& index, int role) const
         return computer->virtualDisplayDriverReady;
     case VirtualDisplayHdrCapableRole:
         return computer->virtualDisplayHdrCapable;
+    case OtpPairingSupportedRole:
+        return computer->otpPairingSupported;
     case DetailsRole: {
         QString state, pairState;
 
@@ -135,6 +138,7 @@ QHash<int, QByteArray> ComputerModel::roleNames() const
     names[VirtualDisplayCapableRole] = "virtualDisplayCapable";
     names[VirtualDisplayReadyRole] = "virtualDisplayReady";
     names[VirtualDisplayHdrCapableRole] = "virtualDisplayHdrCapable";
+    names[OtpPairingSupportedRole] = "otpPairingSupported";
 
     return names;
 }
@@ -244,6 +248,22 @@ void ComputerModel::pairComputer(int computerIndex, QString pin)
     Q_ASSERT(computerIndex < m_Computers.count());
 
     m_ComputerManager->pairHost(m_Computers[computerIndex], pin);
+}
+
+QString ComputerModel::pairComputerWithOtp(int computerIndex, QString pin, QString passphrase)
+{
+    Q_ASSERT(computerIndex < m_Computers.count());
+
+    pin = pin.trimmed();
+    if (!OtpPairing::isValidPin(pin)) {
+        return tr("The one-time PIN is the 4-digit number shown in the host's web interface.");
+    }
+    if (!OtpPairing::isValidPassphrase(passphrase)) {
+        return tr("The passphrase has at least 4 characters.");
+    }
+
+    m_ComputerManager->pairHostWithOtp(m_Computers[computerIndex], pin, passphrase);
+    return QString();
 }
 
 void ComputerModel::handlePairingCompleted(NvComputer*, QString error)

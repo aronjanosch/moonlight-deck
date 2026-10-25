@@ -11,6 +11,8 @@ contains(CONFIG, tests) {
     SUBDIRS += launchWarning
     apolloCapabilities.file = $$PWD/backend/apollocapabilities.pro
     SUBDIRS += apolloCapabilities
+    otpPairing.file = $$PWD/backend/otppairing.pro
+    SUBDIRS += otpPairing
     SUBDIRS += updates
     SUBDIRS += vrr
     SUBDIRS += haptics

@@ -579,10 +579,12 @@ class PendingPairingTask : public QObject, public QRunnable
     Q_OBJECT
 
 public:
-    PendingPairingTask(ComputerManager* computerManager, NvComputer* computer, QString pin)
+    PendingPairingTask(ComputerManager* computerManager, NvComputer* computer, QString pin,
+                       std::optional<QString> otpPassphrase = std::nullopt)
         : m_ComputerManager(computerManager),
           m_Computer(computer),
-          m_Pin(pin)
+          m_Pin(pin),
+          m_OtpPassphrase(otpPassphrase)
     {
         connect(this, &PendingPairingTask::pairingCompleted,
                 computerManager, &ComputerManager::pairingCompleted);
@@ -597,11 +599,21 @@ private:
         NvPairingManager pairingManager(m_Computer);
 
         try {
-           NvPairingManager::PairState result = pairingManager.pair(m_Computer->appVersion, m_Pin, m_Computer->serverCert);
+           NvPairingManager::PairState result = m_OtpPassphrase
+                   ? pairingManager.pairWithOtp(m_Computer->appVersion, m_Pin, *m_OtpPassphrase, m_Computer->serverCert)
+                   : pairingManager.pair(m_Computer->appVersion, m_Pin, m_Computer->serverCert);
            switch (result)
            {
            case NvPairingManager::PairState::PIN_WRONG:
-               emit pairingCompleted(m_Computer, tr("The PIN from the PC didn't match. Please try again."));
+               if (m_OtpPassphrase) {
+                   // Apollo and Vibepollo answer a wrong hash, and an expired or
+                   // missing one-time PIN, like a right one. All of these only
+                   // show up later as a PIN mismatch.
+                   emit pairingCompleted(m_Computer, tr("The one-time PIN or passphrase didn't match the one created on the host, or the PIN has expired. Each PIN is valid for 3 minutes. Please check both or create a new PIN, then try again."));
+               }
+               else {
+                   emit pairingCompleted(m_Computer, tr("The PIN from the PC didn't match. Please try again."));
+               }
                break;
            case NvPairingManager::PairState::FAILED:
                if (m_Computer->currentGameId != 0) {
@@ -622,15 +634,29 @@ private:
                break;
            }
         } catch (const GfeHttpResponseException& e) {
-            emit pairingCompleted(m_Computer, tr("GeForce Experience returned error: %1").arg(e.toQString()));
+            // Only seen if a host reports a missing PIN instead of masking it
+            if (m_OtpPassphrase && e.getStatusCode() == 503) {
+                emit pairingCompleted(m_Computer, tr("The host has no active one-time PIN. Create a new one in the host's web interface; each PIN is valid for 3 minutes."));
+            }
+            else {
+                emit pairingCompleted(m_Computer, tr("GeForce Experience returned error: %1").arg(e.toQString()));
+            }
         } catch (const QtNetworkReplyException& e) {
-            emit pairingCompleted(m_Computer, e.toQString());
+            if (m_OtpPassphrase) {
+                // Qt's error text can quote the request URL, which carries the
+                // one-time PIN hash
+                emit pairingCompleted(m_Computer, tr("Pairing failed. The host could not be reached. (Error %1)").arg(int(e.getError())));
+            }
+            else {
+                emit pairingCompleted(m_Computer, e.toQString());
+            }
         }
     }
 
     ComputerManager* m_ComputerManager;
     NvComputer* m_Computer;
     QString m_Pin;
+    std::optional<QString> m_OtpPassphrase;
 };
 
 void ComputerManager::pairHost(NvComputer* computer, QString pin)
@@ -638,6 +664,12 @@ void ComputerManager::pairHost(NvComputer* computer, QString pin)
     // Punt to a worker thread to avoid stalling the
     // UI while waiting for pairing to complete
     PendingPairingTask* pairing = new PendingPairingTask(this, computer, pin);
+    QThreadPool::globalInstance()->start(pairing);
+}
+
+void ComputerManager::pairHostWithOtp(NvComputer* computer, QString pin, QString passphrase)
+{
+    PendingPairingTask* pairing = new PendingPairingTask(this, computer, pin, passphrase);
     QThreadPool::globalInstance()->start(pairing);
 }
 

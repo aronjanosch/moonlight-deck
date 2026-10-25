@@ -111,6 +111,8 @@ public:
     bool virtualDisplayFrameLimiterEnabled = false;
     uint32_t frameLimiterFpsLimitMilliHz = 0;
     // Optional Apollo/Vibepollo /serverinfo extensions; see apollocapabilities.h
+    // Apollo and Vibepollo always send <Permission>, even unpaired
+    bool otpPairingSupported = false;
     bool apolloPermissionsKnown = false;
     uint32_t apolloPermissions = 0;
     QStringList serverCommands;

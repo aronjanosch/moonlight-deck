@@ -234,6 +234,8 @@ public:
 
     void pairHost(NvComputer* computer, QString pin);
 
+    void pairHostWithOtp(NvComputer* computer, QString pin, QString passphrase);
+
     void quitRunningApp(NvComputer* computer);
 
     bool requestHostSleep(NvComputer* computer);

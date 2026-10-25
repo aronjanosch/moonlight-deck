@@ -29,6 +29,10 @@ FocusScope {
 
     property string pairingUuid: ""
     property string pairingPin: ""
+    // Which of the panel's buttons is selected, when it shows two
+    property int panelChoice: 0
+    // Runs after the text prompt has closed, to ask the next question
+    property var nextPrompt: null
     property bool networkTestPending: false
 
     property int hostsRevision: 0
@@ -64,7 +68,11 @@ FocusScope {
     }
 
     onAppModelKeyChanged: Qt.callLater(syncAppModel)
-    onModeChanged: Qt.callLater(restoreFocus)
+    onModeChanged: {
+        panelChoice = 0
+        Qt.callLater(restoreFocus)
+    }
+    onHostIndexChanged: panelChoice = 0
     onHostCountChanged: {
         if (hostIndex > hostCount) {
             hostIndex = Math.max(0, hostCount - 1)
@@ -209,6 +217,40 @@ FocusScope {
         computerModel.pairComputer(hostIndex, pin)
     }
 
+    // Apollo and Vibepollo hosts can create a one-time PIN with a
+    // passphrase in their web interface, so nothing has to be typed there
+    function startOtpPairing() {
+        var index = hostIndex
+        var uuid = computerModel.uuidAt(index)
+        var name = host.hostName
+        prompt.ask(qsTr("One-time PIN for %1").arg(name), "", qsTr("4-digit PIN from the host's web interface"), function(pin) {
+            askNext(function() {
+                prompt.ask(qsTr("Passphrase for %1").arg(name), "", qsTr("Passphrase entered with the PIN"), function(passphrase) {
+                    if (computerModel.uuidAt(index) !== uuid) {
+                        return
+                    }
+                    var error = computerModel.pairComputerWithOtp(index, pin, passphrase)
+                    if (error !== "") {
+                        showMessage(qsTr("Pairing failed"), error)
+                        return
+                    }
+                    pairingUuid = uuid
+                    pairingPin = ""
+                }, { secret: true })
+            })
+        }, { digits: true })
+    }
+
+    // Asks another question once the prompt that's closing is gone
+    function askNext(fn) {
+        if (prompt.visible) {
+            nextPrompt = fn
+        }
+        else {
+            fn()
+        }
+    }
+
     function pairingComplete(error) {
         pairingUuid = ""
         pairingPin = ""
@@ -290,6 +332,9 @@ FocusScope {
             actions.push({ text: qsTr("Show hidden games"), checked: showHidden,
                            run: function() { showHidden = !showHidden } })
         }
+        if (mode === "unpaired" && item.otpPairingSupported) {
+            actions.push({ text: qsTr("Pair with one-time PIN"), run: startOtpPairing })
+        }
         actions.push({ text: qsTr("Test network"), run: function() { testNetwork(index) } })
         actions.push({ text: qsTr("Rename"), run: function() {
             prompt.ask(qsTr("Rename %1").arg(name), name, "", function(newName) {
@@ -344,7 +389,12 @@ FocusScope {
             showMessage(host.hostName, host.details)
             break
         case "unpaired":
-            startPairing()
+            if (panelChoice === 1 && host.otpPairingSupported) {
+                startOtpPairing()
+            }
+            else {
+                startPairing()
+            }
             break
         case "apps":
             openHostSheet()
@@ -541,6 +591,7 @@ FocusScope {
                         readonly property bool statusUnknown: model.statusUnknown
                         readonly property bool serverSupported: model.serverSupported
                         readonly property string details: model.details
+                        readonly property bool otpPairingSupported: model.otpPairingSupported
                         readonly property bool current: index === hostIndex
                         readonly property bool lit: current && zone === "hosts" && hostRow.activeFocus
 
@@ -769,6 +820,8 @@ FocusScope {
         height: panelColumn.implicitHeight
 
         Keys.onUpPressed: focusHosts()
+        Keys.onLeftPressed: panelChoice = 0
+        Keys.onRightPressed: if (panelSecondButton.visible) panelChoice = 1
         Keys.onReturnPressed: panelAction()
         Keys.onEnterPressed: panelAction()
         Keys.onMenuPressed: openHostSheet()
@@ -792,7 +845,8 @@ FocusScope {
                     case "offline": return qsTr("%1 is offline").arg(host.hostName)
                     case "unsupported": return qsTr("%1 needs a different Moonlight").arg(host.hostName)
                     case "unpaired": return qsTr("Pair with %1").arg(host.hostName)
-                    case "pairing": return qsTr("Enter this PIN on %1").arg(host.hostName)
+                    case "pairing": return pairingPin !== "" ? qsTr("Enter this PIN on %1").arg(host.hostName)
+                                                             : qsTr("Pairing with %1…").arg(host.hostName)
                     case "apps": return qsTr("No games on %1").arg(host.hostName)
                     }
                     return ""
@@ -822,9 +876,11 @@ FocusScope {
                     case "unsupported":
                         return qsTr("The version of GeForce Experience on %1 is not supported by this build of Moonlight. You must update Moonlight to stream from %1.").arg(host.hostName)
                     case "unpaired":
-                        return qsTr("Pairing lets this device stream from %1. You'll get a PIN to enter in the host's web interface.").arg(host.hostName)
+                        return qsTr("Pairing lets this device stream from %1. You'll get a PIN to enter in the host's web interface.").arg(host.hostName) +
+                               (host.otpPairingSupported ? " " + qsTr("Or create a one-time PIN with a passphrase in the host's web interface and enter both here.") : "")
                     case "pairing":
-                        return qsTr("Open the Sunshine or Apollo web interface on the host and enter the PIN there. This screen continues once pairing completes.")
+                        return pairingPin !== "" ? qsTr("Open the Sunshine or Apollo web interface on the host and enter the PIN there. This screen continues once pairing completes.")
+                                                 : qsTr("Checking the one-time PIN with the host.")
                     case "apps":
                         return showHidden ? qsTr("This host doesn't list any applications.")
                                           : qsTr("This host doesn't list any applications, or they are all hidden.")
@@ -860,52 +916,41 @@ FocusScope {
                 }
             }
 
-            // Primary action, also tappable
-            Rectangle {
-                id: panelButton
-                readonly property string label: {
-                    switch (mode) {
-                    case "empty":
-                    case "add": return qsTr("Add a host")
-                    case "offline": return host.wakeable ? qsTr("Wake PC") : qsTr("Test network")
-                    case "unsupported": return qsTr("Details")
-                    case "unpaired": return qsTr("Pair")
-                    case "apps": return qsTr("Host options")
+            // Actions, also tappable. Left and right pick one when there are two.
+            Row {
+                spacing: CouchTheme.px(16)
+
+                CouchPanelButton {
+                    id: panelButton
+                    label: {
+                        switch (mode) {
+                        case "empty":
+                        case "add": return qsTr("Add a host")
+                        case "offline": return host.wakeable ? qsTr("Wake PC") : qsTr("Test network")
+                        case "unsupported": return qsTr("Details")
+                        case "unpaired": return qsTr("Pair")
+                        case "apps": return qsTr("Host options")
+                        }
+                        return ""
                     }
-                    return ""
-                }
-
-                visible: label !== ""
-                width: buttonRow.implicitWidth + CouchTheme.px(40)
-                height: CouchTheme.px(52)
-                radius: height / 2
-                color: panel.activeFocus ? CouchTheme.accent : CouchTheme.surfaceRaised
-
-                Row {
-                    id: buttonRow
-                    anchors.centerIn: parent
-                    spacing: CouchTheme.px(10)
-
-                    CouchGlyph {
-                        anchors.verticalCenter: parent.verticalCenter
-                        button: CouchTheme.confirmButton
-                        tint: panel.activeFocus ? CouchTheme.accentText : CouchTheme.text
-                        ink: panel.activeFocus ? CouchTheme.accent : CouchTheme.surfaceRaised
-                    }
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: panelButton.label
-                        color: panel.activeFocus ? CouchTheme.accentText : CouchTheme.text
-                        font.pixelSize: CouchTheme.px(18)
-                        font.bold: true
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: {
+                    selected: panelChoice === 0
+                    lit: panel.activeFocus && selected
+                    onActivated: {
                         focusContent()
+                        panelChoice = 0
+                        panelAction()
+                    }
+                }
+
+                CouchPanelButton {
+                    id: panelSecondButton
+                    label: mode === "unpaired" && host.otpPairingSupported ? qsTr("Pair with one-time PIN") : ""
+                    onVisibleChanged: if (!visible) panelChoice = 0
+                    selected: panelChoice === 1
+                    lit: panel.activeFocus && selected
+                    onActivated: {
+                        focusContent()
+                        panelChoice = 1
                         panelAction()
                     }
                 }
@@ -942,7 +987,7 @@ FocusScope {
                 text: {
                     if (zone === "hosts" && hostCount > 0) return qsTr("Open")
                     if (mode === "apps" && game) return game.sleepAction ? qsTr("Sleep") : game.running ? qsTr("Resume") : qsTr("Play")
-                    return panelButton.label
+                    return panelChoice === 1 ? panelSecondButton.label : panelButton.label
                 }
                 onActivated: {
                     if (zone === "hosts" && hostCount > 0) focusContent()
@@ -1027,6 +1072,19 @@ FocusScope {
 
     CouchTextPrompt {
         id: prompt
-        onClosed: Qt.callLater(restoreFocus)
+        onClosed: {
+            var next = nextPrompt
+            nextPrompt = null
+            if (next) {
+                next()
+            }
+            else if (sheet.visible) {
+                // A message such as a pairing error opened while closing
+                sheet.refocus()
+            }
+            else {
+                Qt.callLater(restoreFocus)
+            }
+        }
     }
 }
