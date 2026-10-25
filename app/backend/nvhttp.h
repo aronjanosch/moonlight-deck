@@ -160,6 +160,11 @@ public:
     void setHttpsPort(uint16_t port);
     void setTrueUid(bool useTrueUid);
 
+    // Asks Apollo/Vibepollo hosts to stream from a virtual display on
+    // launch and resume. Set from the host's setting when constructed
+    // from an NvComputer.
+    void setRequestVirtualDisplay(bool requestVirtualDisplay);
+
     NvAddress address();
 
     QSslCertificate serverCert();
@@ -223,4 +228,5 @@ private:
     QNetworkAccessManager* m_Nam;
     QSslCertificate m_ServerCert;
     bool m_UseTrueUid;
+    bool m_RequestVirtualDisplay = false;
 };

@@ -13,6 +13,8 @@ contains(CONFIG, tests) {
     SUBDIRS += apolloCapabilities
     otpPairing.file = $$PWD/backend/otppairing.pro
     SUBDIRS += otpPairing
+    apolloHttp.file = $$PWD/backend/apollohttp.pro
+    SUBDIRS += apolloHttp
     SUBDIRS += updates
     SUBDIRS += vrr
     SUBDIRS += haptics

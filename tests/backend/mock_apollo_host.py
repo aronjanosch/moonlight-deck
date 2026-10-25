@@ -17,6 +17,7 @@ import argparse
 import datetime
 import hashlib
 import http.server
+import json
 import os
 import ssl
 import struct
@@ -79,14 +80,31 @@ def png(rgb):
 class Host:
     def __init__(self, args):
         self.args = args
-        self.key, self.cert = make_cert("MockHost")
-        self.cert_pem = self.cert.public_bytes(serialization.Encoding.PEM)
         self.paired = False
+        state = {}
+        if args.state and os.path.exists(args.state):
+            with open(args.state) as f:
+                state = json.load(f)
+        if state:
+            self.key = serialization.load_pem_private_key(state["key"].encode(), None)
+            self.cert = x509.load_pem_x509_certificate(state["cert"].encode())
+            self.paired = state["paired"]
+        else:
+            self.key, self.cert = make_cert("MockHost")
+        self.cert_pem = self.cert.public_bytes(serialization.Encoding.PEM)
         self.session = {}
         self.current_game = 0
         self.clipboard = "text from the mock host"
         self.launches = []
         self.lock = threading.Lock()
+
+    def save(self):
+        if not self.args.state:
+            return
+        key_pem = self.key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+                                         serialization.NoEncryption())
+        with open(self.args.state, "w") as f:
+            json.dump({"key": key_pem.decode(), "cert": self.cert_pem.decode(), "paired": self.paired}, f)
 
     def serverinfo(self, https):
         a = self.args
@@ -179,6 +197,7 @@ class Host:
             except Exception:
                 ok = False
             self.paired = ok
+            self.save()
             return xml("<paired>%d</paired>" % (1 if ok else 0))
         return xml("", 404, "Invalid pairing request")
 
@@ -211,6 +230,7 @@ def handler_for(host, https):
                     return self.reply(host.pair(q, https))
                 if url.path == "/unpair":
                     host.paired = False
+                    host.save()
                     return self.reply('<root status_code="200"></root>')
                 if not https or not host.paired:
                     return self.reply('<root status_code="401" status_message="The client is not authorized"></root>')
@@ -258,6 +278,7 @@ def main():
     p.add_argument("--otp-passphrase", default="")
     p.add_argument("--running-game", type=int, default=0)
     p.add_argument("--launch-log", default="")
+    p.add_argument("--state", default="", help="file keeping the host certificate and pairing across runs")
     args = p.parse_args()
 
     host = Host(args)

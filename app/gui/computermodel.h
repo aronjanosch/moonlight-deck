@@ -22,6 +22,7 @@ class ComputerModel : public QAbstractListModel
         VirtualDisplayReadyRole,
         VirtualDisplayHdrCapableRole,
         OtpPairingSupportedRole,
+        VirtualDisplayRequestedRole,
     };
 
 public:
@@ -51,6 +52,8 @@ public:
     Q_INVOKABLE void wakeComputer(int computerIndex);
 
     Q_INVOKABLE void renameComputer(int computerIndex, QString name);
+
+    Q_INVOKABLE void setVirtualDisplayRequested(int computerIndex, bool requested);
 
     Q_INVOKABLE QString uuidAt(int computerIndex) const;
 

@@ -48,6 +48,8 @@ NvHTTP::NvHTTP(NvAddress address, uint16_t httpsPort, QSslCertificate serverCert
 NvHTTP::NvHTTP(NvComputer* computer, QNetworkAccessManager* nam) :
     NvHTTP(computer->activeAddress, computer->activeHttpsPort, computer->serverCert, !computer->isNvidiaServerSoftware, nam)
 {
+    // Only hosts that advertise virtual displays understand the request
+    m_RequestVirtualDisplay = computer->requestVirtualDisplay && computer->virtualDisplayCapable;
 }
 
 void NvHTTP::setServerCert(QSslCertificate serverCert)
@@ -70,6 +72,11 @@ void NvHTTP::setAddress(NvAddress address)
 void NvHTTP::setHttpsPort(uint16_t port)
 {
     m_BaseUrlHttps.setPort(port);
+}
+
+void NvHTTP::setRequestVirtualDisplay(bool requestVirtualDisplay)
+{
+    m_RequestVirtualDisplay = requestVirtualDisplay;
 }
 
 void NvHTTP::setTrueUid(bool useTrueUid)
@@ -388,6 +395,10 @@ NvHTTP::startApp(QString verb,
                                    // (Vibeshine: 1000 Hz virtual display in its Automatic mode).
                                    // Other hosts ignore unknown launch parameters.
                                    (clientVrrRequested ? "&clientVrrRequested=1" : "")+
+                                   // Apollo/Vibepollo extension, as sent by Artemis. Only ever sent
+                                   // as 1: Vibepollo reads an explicit 0 as "disable the virtual
+                                   // display this host or app would otherwise use".
+                                   (m_RequestVirtualDisplay ? "&virtualDisplay=1" : "")+
                                    LiGetLaunchUrlQueryParameters(),
                                    LAUNCH_TIMEOUT_MS);
 

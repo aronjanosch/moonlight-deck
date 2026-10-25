@@ -60,6 +60,8 @@ QVariant ComputerModel::data(const QModelIndex& index, int role) const
         return computer->virtualDisplayHdrCapable;
     case OtpPairingSupportedRole:
         return computer->otpPairingSupported;
+    case VirtualDisplayRequestedRole:
+        return computer->requestVirtualDisplay;
     case DetailsRole: {
         QString state, pairState;
 
@@ -139,6 +141,7 @@ QHash<int, QByteArray> ComputerModel::roleNames() const
     names[VirtualDisplayReadyRole] = "virtualDisplayReady";
     names[VirtualDisplayHdrCapableRole] = "virtualDisplayHdrCapable";
     names[OtpPairingSupportedRole] = "otpPairingSupported";
+    names[VirtualDisplayRequestedRole] = "virtualDisplayRequested";
 
     return names;
 }
@@ -207,6 +210,19 @@ void ComputerModel::renameComputer(int computerIndex, QString name)
     Q_ASSERT(computerIndex < m_Computers.count());
 
     m_ComputerManager->renameHost(m_Computers[computerIndex], name);
+}
+
+void ComputerModel::setVirtualDisplayRequested(int computerIndex, bool requested)
+{
+    Q_ASSERT(computerIndex < m_Computers.count());
+    NvComputer* computer = m_Computers[computerIndex];
+
+    {
+        QWriteLocker lock(&computer->lock);
+        computer->requestVirtualDisplay = requested;
+    }
+
+    m_ComputerManager->clientSideAttributeUpdated(computer);
 }
 
 QString ComputerModel::generatePinString()

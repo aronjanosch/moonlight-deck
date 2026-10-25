@@ -332,6 +332,18 @@ FocusScope {
             actions.push({ text: qsTr("Show hidden games"), checked: showHidden,
                            run: function() { showHidden = !showHidden } })
         }
+        // Apollo and Vibepollo can create a display just for this stream
+        if (item.online && item.paired && item.virtualDisplayCapable) {
+            var requested = item.virtualDisplayRequested
+            actions.push({ text: item.virtualDisplayReady ? qsTr("Stream from a virtual display")
+                                                          : qsTr("Stream from a virtual display (host driver not ready)"),
+                           checked: requested,
+                           run: function() {
+                               computerModel.setVirtualDisplayRequested(index, !requested)
+                               showToast(!requested ? qsTr("Games on %1 will start on a virtual display").arg(name)
+                                                    : qsTr("Games on %1 will start on the host's display").arg(name))
+                           } })
+        }
         if (mode === "unpaired" && item.otpPairingSupported) {
             actions.push({ text: qsTr("Pair with one-time PIN"), run: startOtpPairing })
         }
@@ -592,6 +604,9 @@ FocusScope {
                         readonly property bool serverSupported: model.serverSupported
                         readonly property string details: model.details
                         readonly property bool otpPairingSupported: model.otpPairingSupported
+                        readonly property bool virtualDisplayCapable: model.virtualDisplayCapable
+                        readonly property bool virtualDisplayReady: model.virtualDisplayReady
+                        readonly property bool virtualDisplayRequested: model.virtualDisplayRequested
                         readonly property bool current: index === hostIndex
                         readonly property bool lit: current && zone === "hosts" && hostRow.activeFocus
 

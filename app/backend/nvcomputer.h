@@ -132,6 +132,9 @@ public:
     QSslCertificate serverCert;
     QVector<NvApp> appList;
     bool isNvidiaServerSoftware;
+    // Client-side choice to stream from a virtual display on hosts that
+    // advertise VirtualDisplayCapable
+    bool requestVirtualDisplay = false;
     // Remember to update isEqualSerialized() when adding fields here!
 
     // Synchronization
