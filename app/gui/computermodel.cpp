@@ -51,6 +51,12 @@ QVariant ComputerModel::data(const QModelIndex& index, int role) const
         return computer->state == NvComputer::CS_UNKNOWN;
     case ServerSupportedRole:
         return computer->isSupportedServerVersion;
+    case VirtualDisplayCapableRole:
+        return computer->virtualDisplayCapable;
+    case VirtualDisplayReadyRole:
+        return computer->virtualDisplayDriverReady;
+    case VirtualDisplayHdrCapableRole:
+        return computer->virtualDisplayHdrCapable;
     case DetailsRole: {
         QString state, pairState;
 
@@ -126,6 +132,9 @@ QHash<int, QByteArray> ComputerModel::roleNames() const
     names[StatusUnknownRole] = "statusUnknown";
     names[ServerSupportedRole] = "serverSupported";
     names[DetailsRole] = "details";
+    names[VirtualDisplayCapableRole] = "virtualDisplayCapable";
+    names[VirtualDisplayReadyRole] = "virtualDisplayReady";
+    names[VirtualDisplayHdrCapableRole] = "virtualDisplayHdrCapable";
 
     return names;
 }

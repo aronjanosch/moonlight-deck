@@ -253,6 +253,7 @@ HEADERS += \
     backend/identitymanager.h \
     backend/nvcomputer.h \
     backend/framelimitercapabilities.h \
+    backend/apollocapabilities.h \
     backend/nvhttp.h \
     backend/poweractions.h \
     backend/launchwarning.h \

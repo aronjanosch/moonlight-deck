@@ -1,6 +1,7 @@
 #include "nvcomputer.h"
 #include "poweractions.h"
 #include "framelimitercapabilities.h"
+#include "apollocapabilities.h"
 #include "nvapp.h"
 #include "settings/compatfetcher.h"
 
@@ -179,6 +180,14 @@ NvComputer::NvComputer(NvHTTP& http, QString serverInfo)
     this->frameLimiterEnabled = limiter.enabled;
     this->virtualDisplayFrameLimiterEnabled = limiter.virtualDisplayEnabled;
     this->frameLimiterFpsLimitMilliHz = limiter.fpsLimitMilliHz;
+
+    const auto apollo = ApolloCapabilities::fromServerInfo(serverInfo);
+    this->apolloPermissionsKnown = apollo.permissionsKnown;
+    this->apolloPermissions = apollo.permissions;
+    this->serverCommands = apollo.serverCommands;
+    this->virtualDisplayCapable = apollo.virtualDisplayCapable;
+    this->virtualDisplayDriverReady = apollo.virtualDisplayDriverReady;
+    this->virtualDisplayHdrCapable = apollo.virtualDisplayHdrCapable;
 
     this->displayModes = NvHTTP::getDisplayModeList(serverInfo);
     std::stable_sort(this->displayModes.begin(), this->displayModes.end(),
@@ -584,6 +593,12 @@ bool NvComputer::update(const NvComputer& that)
     ASSIGN_IF_CHANGED(frameLimiterEnabled);
     ASSIGN_IF_CHANGED(virtualDisplayFrameLimiterEnabled);
     ASSIGN_IF_CHANGED(frameLimiterFpsLimitMilliHz);
+    ASSIGN_IF_CHANGED(apolloPermissionsKnown);
+    ASSIGN_IF_CHANGED(apolloPermissions);
+    ASSIGN_IF_CHANGED(serverCommands);
+    ASSIGN_IF_CHANGED(virtualDisplayCapable);
+    ASSIGN_IF_CHANGED(virtualDisplayDriverReady);
+    ASSIGN_IF_CHANGED(virtualDisplayHdrCapable);
     ASSIGN_IF_CHANGED(currentGameId);
     ASSIGN_IF_CHANGED(activeAddress);
     ASSIGN_IF_CHANGED(state);
