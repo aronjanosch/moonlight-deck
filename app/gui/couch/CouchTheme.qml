@@ -12,6 +12,11 @@ QtObject {
         return Math.round(value * s)
     }
 
+    // The scale that fits the 1280x800 layout into a window
+    function scaleFor(width, height) {
+        return Math.max(0.6, Math.min(width / 1280, height / 800))
+    }
+
     readonly property color background: "#0b0d13"
     readonly property color surface: "#171a24"
     readonly property color surfaceRaised: "#252a38"

@@ -1,2 +1,0 @@
-module SdlGamepadKeyNavigation
-singleton SdlGamepadKeyNavigation 1.0 SdlGamepadKeyNavigation.qml

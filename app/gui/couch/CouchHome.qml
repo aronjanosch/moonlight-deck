@@ -64,7 +64,7 @@ FocusScope {
     Binding {
         target: CouchTheme
         property: "s"
-        value: Math.max(0.6, Math.min(home.width / 1280, home.height / 800))
+        value: CouchTheme.scaleFor(home.width, home.height)
     }
 
     onAppModelKeyChanged: Qt.callLater(syncAppModel)

@@ -3,7 +3,7 @@ import "."
 
 // A controller button drawn without relying on glyph fonts:
 // face buttons ("A", "B", "X", "Y"), shoulders ("LB", "RB"),
-// and the "view" and "menu" buttons.
+// the "view" and "menu" buttons, and "dpad" for left/right.
 Item {
     property string button: "A"
     property color tint: CouchTheme.text
@@ -11,13 +11,14 @@ Item {
 
     readonly property bool isFace: button.length === 1
     readonly property bool isShoulder: button === "LB" || button === "RB"
+    readonly property bool isDpad: button === "dpad"
 
     implicitHeight: CouchTheme.px(26)
-    implicitWidth: isShoulder ? CouchTheme.px(40) : implicitHeight
+    implicitWidth: isShoulder || isDpad ? CouchTheme.px(40) : implicitHeight
 
     Rectangle {
         anchors.fill: parent
-        radius: isShoulder ? CouchTheme.px(7) : height / 2
+        radius: isShoulder || isDpad ? CouchTheme.px(7) : height / 2
         color: tint
     }
 
@@ -64,5 +65,16 @@ Item {
                 color: ink
             }
         }
+    }
+
+    // D-pad left/right: two arrowheads
+    Text {
+        visible: isDpad
+        anchors.centerIn: parent
+        anchors.verticalCenterOffset: -CouchTheme.px(1)
+        text: "‹ ›"
+        color: ink
+        font.pixelSize: CouchTheme.px(18)
+        font.bold: true
     }
 }

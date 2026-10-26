@@ -2590,15 +2590,13 @@ preserves historical tolerance selection for old traces. Session-policy replay
 restores all four recorded values for customizable captures. Exact replay always
 uses the full captured parameter snapshot.
 
-The timing controls support gamepad Tab/Shift-Tab focus navigation and left/right
-adjustment, including when a numeric text field has focus. The editable VRR
-fields route the editor's left/right key signals directly to the adjustment
-handlers before text editing (input correction reviewed against `ff6f071c`,
-2026-10-08). Forwarding key events to the parent SpinBox alone lets its editor
-consume presses as cursor movement. `tests/gui/tst_vrrtiminginput.qml` covers
-single presses, repeated adjustments and bounds on all four fields.
-Preset and PyroWave
-calibration-host popups use `AutoResizingComboBox`, switching the gamepad to
+The timing controls are rows of the settings page
+([CouchSettings.qml](app/gui/couch/CouchSettings.qml)): up/down move between
+rows, left/right step a value within its bounds, and A (or a click) asks for a
+typed value. The rows have no text editor that could consume arrows as cursor
+movement. `tests/qml/tst_CouchSettings.qml` covers preset and custom detection,
+single steps and bounds on all four fields. The PyroWave
+calibration-host popup uses `AutoResizingComboBox`, switching the gamepad to
 arrow/Return navigation while open and restoring UI navigation on close.
 The calibration host resolves its target-card focus on each closed-menu Tab
 event, leaving popup arrows to Qt. Its former unconditional Down handler
@@ -3869,7 +3867,7 @@ directory contains the common library.
 
 | Area | Source and entry points |
 | --- | --- |
-| User preferences | [streamingpreferences.cpp](app/settings/streamingpreferences.cpp): `reload()`, `save()`; [SettingsView.qml](app/gui/SettingsView.qml) |
+| User preferences | [streamingpreferences.cpp](app/settings/streamingpreferences.cpp): `reload()`, `save()`; [CouchSettings.qml](app/gui/couch/CouchSettings.qml) |
 | Session orchestration | [session.cpp](app/streaming/session.cpp): `snapshotPresentationSettings()`, `initialize()`, `drSubmitDecodeUnit()`, stream event loop |
 | FPS recommendations | [vrrratepolicy.cpp](app/streaming/vrrratepolicy.cpp) |
 | Protocol configuration | [Limelight.h](moonlight-common-c/moonlight-common-c/src/Limelight.h), [Connection.c](moonlight-common-c/moonlight-common-c/src/Connection.c), [SdpGenerator.c](moonlight-common-c/moonlight-common-c/src/SdpGenerator.c), [RtspConnection.c](moonlight-common-c/moonlight-common-c/src/RtspConnection.c) |

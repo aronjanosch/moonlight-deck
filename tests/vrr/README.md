@@ -317,9 +317,11 @@ QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software qmltestrunner \
     -input tests/qml -import tests/qml/mocks
 ```
 
-They cover preset resets, custom detection, numeric entry, bounded adjustments,
-focus traversal, and calibration-host popup select/cancel. The mock modules
-replace only the platform navigation/theme singletons, not the tested controls.
+They cover the settings page (section and row navigation, preset resets,
+custom detection, typed values, bounded adjustments, narrow and TV layouts)
+and calibration-host popup select/cancel. The mock modules replace the
+preferences and platform singletons, not the tested controls. The settings
+test saves `couch-settings-*.png` screenshots in the working directory.
 
 The SDL dispatcher regression test uses isolated preferences and injected
 controller events, with mapping downloads stubbed out. On Linux with SDL2:

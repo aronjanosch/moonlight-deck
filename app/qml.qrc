@@ -3,11 +3,9 @@
         <file>gui/main.qml</file>
         <file>gui/PcView.qml</file>
         <file>gui/AppView.qml</file>
-        <file>gui/SettingsView.qml</file>
         <file>gui/CalibrationButton.qml</file>
         <file>gui/CalibrationHostSelection.qml</file>
-        <file>gui/VrrTimingSettings.qml</file>
-        <file>gui/PyroWavePacketSpeedSettings.qml</file>
+        <file>gui/PyroWaveCalibrationDialog.qml</file>
         <file>gui/StreamSegue.qml</file>
         <file>gui/GamepadMapper.qml</file>
         <file>gui/QuitSegue.qml</file>
@@ -35,5 +33,8 @@
         <file>gui/couch/CouchTextPrompt.qml</file>
         <file>gui/couch/CouchPanelButton.qml</file>
         <file>gui/couch/CouchControlIcon.qml</file>
+        <file>gui/couch/CouchSettings.qml</file>
+        <file>gui/couch/CouchSettingsSection.qml</file>
+        <file>gui/couch/CouchSettingRow.qml</file>
     </qresource>
 </RCC>

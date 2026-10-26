@@ -14,11 +14,12 @@ Popup {
     property var actions: []
     property var pendingRun: null
 
-    function present(newTitle, newMessage, newActions) {
+    function present(newTitle, newMessage, newActions, startIndex) {
         title = newTitle
         message = newMessage || ""
         actions = newActions
-        list.currentIndex = 0
+        list.currentIndex = Math.max(0, startIndex || 0)
+        list.positionViewAtIndex(list.currentIndex, ListView.Contain)
         open()
     }
 
@@ -194,7 +195,7 @@ Popup {
             Keys.onMenuPressed: sheet.close()
             Keys.onBackPressed: sheet.close()
             // View, Y and Start close the sheet instead of reaching the page below
-            Keys.onPressed: {
+            Keys.onPressed: function(event) {
                 if (event.key === Qt.Key_Context1 || event.key === Qt.Key_Hangup) {
                     sheet.close()
                     event.accepted = true

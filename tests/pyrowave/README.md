@@ -42,12 +42,8 @@ cover a passing intermediate speed despite failed endpoints, exhaustive
 50 Mbps alternatives before fallback, fallback ranking by tail/severe damage,
 failed confirmations, invalid measurements and cancellation.
 
-`tst_PacketSpeed.qml` exercises the production packet-speed settings control:
-numeric editing, controller arrow steps, Automatic reset, updates from an
-applied calibration value, and a compact layout. Run it with Qt's
-`qmltestrunner -input tests/pyrowave/tst_PacketSpeed.qml`. For an offscreen
-Windows run, set `QT_QUICK_CONTROLS_STYLE=Material`, `QT_QUICK_BACKEND=software`
-and `QT_QPA_FONTDIR=C:\Windows\Fonts`, then add `-platform offscreen`.
+The packet-speed row of the settings page is covered with the other settings
+rows by `tests/qml/tst_CouchSettings.qml` (see `tests/vrr/README.md`).
 
 ## macOS native GPU checks
 
