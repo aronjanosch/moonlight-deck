@@ -36,7 +36,7 @@ from cryptography.x509.oid import NameOID
 CONTROL_UUID = "9a1c5a25-58fe-40e0-b9aa-7d3f0000000%d"
 # Vibepollo src/remote_session.h: (id, uuid suffix, title)
 VIBEPOLLO_CONTROLS = [
-    (2147483501, 1, "Resume"),
+    (2147483511, 1, "  Resume"),  # secondary identity, ranked with spaces
     (2147483502, 2, "Disconnect Monitor"),
     (2147483503, 3, "Disconnect Input"),
     (2147483504, 4, "Terminate"),

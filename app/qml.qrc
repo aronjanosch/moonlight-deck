@@ -34,5 +34,6 @@
         <file>gui/couch/CouchActionSheet.qml</file>
         <file>gui/couch/CouchTextPrompt.qml</file>
         <file>gui/couch/CouchPanelButton.qml</file>
+        <file>gui/couch/CouchControlIcon.qml</file>
     </qresource>
 </RCC>

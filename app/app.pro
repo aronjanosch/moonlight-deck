@@ -245,6 +245,7 @@ HEADERS += \
     SDL_compat.h \
     backend/nvaddress.h \
     backend/nvapp.h \
+    backend/hostcontrols.h \
     cli/pair.h \
     settings/compatfetcher.h \
     settings/mappingfetcher.h \

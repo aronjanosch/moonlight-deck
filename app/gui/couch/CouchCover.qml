@@ -3,6 +3,7 @@ import "."
 
 // One game in the shelf: its box art, or a title card when the host
 // only has a placeholder image, plus running and hidden badges.
+// Vibepollo's session controls get a shorter tile with their own icon.
 Item {
     id: cover
 
@@ -12,13 +13,16 @@ Item {
     property bool hidden
     property bool sleepAction
     property bool appCollectorGame
+    // A HostControls name, or empty for a game
+    property string hostControl
     property bool selected
     property bool lit
 
     signal tapped()
 
     // Same detection as AppView: GFE and our own placeholder sizes
-    readonly property bool isPlaceholder: sleepAction ||
+    readonly property bool isControl: hostControl !== ""
+    readonly property bool isPlaceholder: sleepAction || isControl ||
         art.status === Image.Error ||
         (!appCollectorGame &&
          ((art.sourceSize.width === 130 && art.sourceSize.height === 180) ||
@@ -28,7 +32,8 @@ Item {
     Item {
         id: card
         width: parent.width
-        height: parent.height
+        height: cover.isControl ? Math.round(parent.height * 0.62) : parent.height
+        y: parent.height - height
         scale: cover.selected ? 1.0 : 0.88
         opacity: cover.hidden ? 0.4 : (cover.selected ? 1.0 : 0.72)
         transformOrigin: Item.Bottom
@@ -62,17 +67,54 @@ Item {
             id: art
             anchors.fill: parent
             anchors.margins: CouchTheme.px(1)
-            source: cover.sleepAction ? "" : cover.boxart
+            source: cover.sleepAction || cover.isControl ? "" : cover.boxart
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
             smooth: true
             visible: !cover.isPlaceholder && status === Image.Ready
         }
 
+        // Host-control tile
+        Rectangle {
+            anchors.fill: parent
+            visible: cover.isControl
+            radius: CouchTheme.px(8)
+            color: CouchTheme.surface
+            border.color: CouchTheme.surfaceRaised
+            border.width: CouchTheme.px(2)
+
+            CouchControlIcon {
+                id: controlIcon
+                kind: cover.hostControl
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: parent.height * 0.2
+                width: CouchTheme.px(56)
+                height: width
+                tint: cover.lit ? CouchTheme.accent : CouchTheme.text
+            }
+
+            Text {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: controlIcon.bottom
+                anchors.bottom: parent.bottom
+                anchors.margins: CouchTheme.px(10)
+                text: cover.name
+                color: CouchTheme.text
+                font.pixelSize: CouchTheme.px(17)
+                font.bold: true
+                wrapMode: Text.Wrap
+                elide: Text.ElideRight
+                maximumLineCount: 2
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+        }
+
         // Title card for apps without real box art
         Rectangle {
             anchors.fill: parent
-            visible: cover.isPlaceholder
+            visible: cover.isPlaceholder && !cover.isControl
             radius: CouchTheme.px(8)
             gradient: Gradient {
                 GradientStop { position: 0.0; color: CouchTheme.surfaceRaised }

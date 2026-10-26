@@ -89,6 +89,25 @@ private slots:
             QCOMPARE(line.count("virtualDisplay"), 1);
         }
     }
+
+    void appListCarriesUuids() {
+        TlsServer server(paired);
+        server.results = {{"<root status_code=\"200\">"
+                           "<App><IsHdrSupported>0</IsHdrSupported><AppTitle>Desktop</AppTitle><UUID>0B5E3E2C-1111-4A4A-9C9C-000000000001</UUID><ID>1001</ID></App>"
+                           "<App><IsHdrSupported>0</IsHdrSupported><AppTitle>  Resume</AppTitle><UUID>9a1c5a25-58fe-40e0-b9aa-7d3f00000001</UUID><IDX>2147483511</IDX><ID>2147483511</ID></App>"
+                           "<App><IsHdrSupported>1</IsHdrSupported><AppTitle>Stock</AppTitle><ID>1002</ID></App>"
+                           "</root>"}};
+        QScopedPointer<NvHTTP> client(http(server));
+        const auto apps = client->getAppList();
+        QCOMPARE(apps.size(), 3);
+        QCOMPARE(apps[0].uuid, QString("0B5E3E2C-1111-4A4A-9C9C-000000000001"));
+        QCOMPARE(apps[1].uuid, QString("9a1c5a25-58fe-40e0-b9aa-7d3f00000001"));
+        QCOMPARE(apps[1].id, 2147483511);
+        QCOMPARE(apps[1].name, QString("  Resume"));
+        // Stock hosts send no UUID
+        QVERIFY(apps[2].uuid.isEmpty());
+        QVERIFY(apps[2].hdrSupported);
+    }
 };
 
 QTEST_GUILESS_MAIN(ApolloHttpTest)

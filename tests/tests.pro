@@ -15,6 +15,8 @@ contains(CONFIG, tests) {
     SUBDIRS += otpPairing
     apolloHttp.file = $$PWD/backend/apollohttp.pro
     SUBDIRS += apolloHttp
+    hostControls.file = $$PWD/backend/hostcontrols.pro
+    SUBDIRS += hostControls
     SUBDIRS += updates
     SUBDIRS += vrr
     SUBDIRS += haptics

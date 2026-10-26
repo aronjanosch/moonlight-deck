@@ -2,6 +2,7 @@
 
 #include "backend/boxartmanager.h"
 #include "backend/computermanager.h"
+#include "backend/hostcontrols.h"
 #include "streaming/session.h"
 
 #include <QAbstractListModel>
@@ -24,6 +25,7 @@ class AppModel : public QAbstractListModel
         DirectLaunchRole,
         AppCollectorGameRole,
         SleepActionRole,
+        HostControlRole,
     };
 
 public:
@@ -33,8 +35,10 @@ public:
     bool virtualDisplayFrameLimiterEnabled() const;
     double frameLimiterFpsLimit() const;
 
-    // Must be called before any QAbstractListModel functions
-    Q_INVOKABLE void initialize(ComputerManager* computerManager, int computerIndex, bool showHiddenGames);
+    // Must be called before any QAbstractListModel functions. With
+    // groupHostControls, Vibepollo's session controls follow the games.
+    Q_INVOKABLE void initialize(ComputerManager* computerManager, int computerIndex, bool showHiddenGames,
+                                bool groupHostControls = false);
 
     Q_INVOKABLE Session* createSessionForApp(int appIndex);
 
@@ -75,6 +79,10 @@ private:
 
     bool isAppCurrentlyVisible(const NvApp& app);
 
+    HostControls::Kind hostControl(const NvApp& app) const;
+
+    bool appLessThan(const NvApp& app1, const NvApp& app2) const;
+
     void updateSleepAction();
     bool m_SleepActionVisible = false;
     void updateFrameLimiterCapabilities();
@@ -88,4 +96,8 @@ private:
     QVector<NvApp> m_VisibleApps, m_AllApps;
     int m_CurrentGameId;
     bool m_ShowHiddenGames;
+    bool m_GroupHostControls = false;
+    // Snapshot of whether the host identifies as Apollo-family, so its
+    // apps without a UUID may be matched to controls by ID
+    bool m_ControlIdFallback = false;
 };

@@ -119,7 +119,7 @@ FocusScope {
 
         if (wanted !== "") {
             var model = Qt.createQmlObject('import AppModel 1.0; AppModel {}', home, '')
-            model.initialize(ComputerManager, hostIndex, showHidden)
+            model.initialize(ComputerManager, hostIndex, showHidden, true)
             model.hostSleepCompleted.connect(hostSleepCompleted)
             appModel = model
             shelf.currentIndex = Math.max(0, Math.min(lastAppIndex[wanted] || 0, shelf.count - 1))
@@ -431,8 +431,9 @@ FocusScope {
             return
         }
 
+        // Session controls act on whatever is running, so they launch as is
         var runningId = appModel.getRunningAppId()
-        if (runningId !== 0 && runningId !== appId) {
+        if (runningId !== 0 && runningId !== appId && !item.isControl) {
             var runningName = appModel.getRunningAppName()
             sheet.present(qsTr("%1 is still running").arg(runningName),
                           qsTr("Quit it to start %1? Any unsaved progress will be lost.").arg(name), [
@@ -504,7 +505,7 @@ FocusScope {
         var index = shelf.currentIndex
         var hidden = item.hidden
         var actions = [
-            { text: item.running ? qsTr("Resume") : qsTr("Play"), run: activateGame }
+            { text: item.running ? qsTr("Resume") : item.isControl ? qsTr("Start") : qsTr("Play"), run: activateGame }
         ]
         if (item.running) {
             actions.push({ text: qsTr("Quit game"), run: confirmQuitGame })
@@ -794,10 +795,12 @@ FocusScope {
             readonly property bool directLaunch: model.directLaunch
 
             y: CouchTheme.px(18)
-            width: coverWidth
+            width: hostControl !== "" ? Math.round(coverWidth * 0.62) : coverWidth
             height: coverHeight
             name: model.name
-            boxart: model.boxart
+            hostControl: model.hostControl
+            // Controls have no box art, so don't fetch it
+            boxart: hostControl !== "" ? "" : model.boxart
             running: model.running
             hidden: model.hidden
             sleepAction: model.sleepAction
@@ -1001,7 +1004,8 @@ FocusScope {
                 button: CouchTheme.confirmButton
                 text: {
                     if (zone === "hosts" && hostCount > 0) return qsTr("Open")
-                    if (mode === "apps" && game) return game.sleepAction ? qsTr("Sleep") : game.running ? qsTr("Resume") : qsTr("Play")
+                    if (mode === "apps" && game) return game.sleepAction ? qsTr("Sleep") : game.running ? qsTr("Resume") :
+                                                        game.isControl ? qsTr("Start") : qsTr("Play")
                     return panelChoice === 1 ? panelSecondButton.label : panelButton.label
                 }
                 onActivated: {
