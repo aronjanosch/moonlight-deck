@@ -2,6 +2,7 @@
 #include <QTemporaryDir>
 #include "backend/nvcomputer.h"
 #include "backend/nvhttp.h"
+#include "backend/apollocapabilities.h"
 #include "../power/tlsfixture.h"
 
 extern "C" const char* LiGetLaunchUrlQueryParameters(void) { return "&corever=1"; }
@@ -107,6 +108,92 @@ private slots:
         // Stock hosts send no UUID
         QVERIFY(apps[2].uuid.isEmpty());
         QVERIFY(apps[2].hdrSupported);
+    }
+
+    // Clipboard over the paired HTTPS port (Apollo/Vibepollo). Vibepollo only
+    // answers during a stream; the client must never call a host that didn't
+    // grant the permission, and stock hosts grant nothing.
+    void clipboardRead() {
+        TlsServer server(paired); server.results = {{QString::fromUtf8("Grüße ✓").toUtf8()}};
+        QScopedPointer<NvHTTP> client(http(server));
+        client->setApolloPermissions(true, uint32_t(ApolloCapabilities::Permission::ClipboardRead));
+        QVERIFY(client->canReadClipboard());
+        QVERIFY(!client->canSetClipboard());
+        QCOMPARE(client->getClipboardText(), QString::fromUtf8("Grüße ✓"));
+        QCOMPARE(server.requests.size(), 1);
+        QVERIFY(server.requests[0].line.startsWith("GET /actions/clipboard?uniqueid="));
+        QVERIFY(server.requests[0].line.endsWith("&type=text HTTP/1.1"));
+    }
+
+    void clipboardSet() {
+        TlsServer server(paired); server.results = {{QByteArray()}};
+        QScopedPointer<NvHTTP> client(http(server));
+        client->setApolloPermissions(true, uint32_t(ApolloCapabilities::Permission::ClipboardSet));
+        client->setClipboardText(QString::fromUtf8("line 1\nGrüße"));
+        QCOMPARE(server.requests.size(), 1);
+        const auto request = server.requests[0];
+        QVERIFY(request.line.startsWith("POST /actions/clipboard?uniqueid="));
+        QVERIFY(request.line.endsWith("&type=text HTTP/1.1"));
+        QVERIFY(request.headers.toLower().contains("content-type: text/plain; charset=utf-8"));
+        QCOMPARE(request.body, QString::fromUtf8("line 1\nGrüße").toUtf8());
+    }
+
+    void clipboardNeverSentWithoutPermission() {
+        struct Case { bool known; uint32_t mask; bool hasPair; };
+        const uint32_t otherBits = uint32_t(ApolloCapabilities::Permission::List) |
+                                   uint32_t(ApolloCapabilities::Permission::Launch);
+        const uint32_t clipboard = uint32_t(ApolloCapabilities::Permission::ClipboardRead) |
+                                   uint32_t(ApolloCapabilities::Permission::ClipboardSet);
+        for (const Case c : {Case{false, 0, true},           // stock host: no mask at all
+                             Case{false, clipboard, true},   // never trust an unknown mask
+                             Case{true, otherBits, true},    // denied by the host
+                             Case{true, clipboard, false}}) { // not paired
+            TlsServer server(paired); server.results = {{"must not be requested"}};
+            QScopedPointer<NvHTTP> client(c.hasPair ? http(server)
+                : new NvHTTP(NvAddress("127.0.0.1", 47989), server.serverPort(), QSslCertificate(), true));
+            client->setApolloPermissions(c.known, c.mask);
+            bool readThrew = false, setThrew = false;
+            try { client->getClipboardText(); } catch (const std::exception&) { readThrew = true; }
+            try { client->setClipboardText("secret"); } catch (const std::exception&) { setThrew = true; }
+            QVERIFY(readThrew && setThrew);
+            QVERIFY(!client->canReadClipboard() && !client->canSetClipboard());
+            QCoreApplication::processEvents();
+            QCOMPARE(server.connections, 0);
+            QVERIFY(server.requests.isEmpty());
+        }
+    }
+
+    void clipboardHostRefusalThrows() {
+        // Apollo/Vibepollo answer 403 to a client that is not streaming
+        TlsServer server(paired); server.results = {{QByteArray(), 403}};
+        QScopedPointer<NvHTTP> client(http(server));
+        client->setApolloPermissions(true, uint32_t(ApolloCapabilities::Permission::ClipboardRead));
+        bool threw = false;
+        try { client->getClipboardText(); } catch (const std::exception&) { threw = true; }
+        QVERIFY(threw);
+        QCOMPARE(server.requests.size(), 1);
+    }
+
+    void clipboardPermissionsComeFromTheComputer() {
+        TlsServer server(paired); server.results = {{"from host"}};
+        NvComputer computer;
+        computer.activeAddress = NvAddress("127.0.0.1", 47989);
+        computer.activeHttpsPort = server.serverPort();
+        computer.serverCert = paired.certificate;
+        computer.isNvidiaServerSoftware = false;
+        computer.apolloPermissionsKnown = true;
+        computer.apolloPermissions = uint32_t(ApolloCapabilities::Permission::ClipboardRead);
+        NvHTTP client(&computer);
+        QVERIFY(client.canReadClipboard());
+        QVERIFY(!client.canSetClipboard());
+        QCOMPARE(client.getClipboardText(), QString("from host"));
+
+        // A stock host never advertises a mask
+        NvComputer stock = computer;
+        stock.apolloPermissionsKnown = false;
+        stock.apolloPermissions = 0;
+        NvHTTP stockClient(&stock);
+        QVERIFY(!stockClient.canReadClipboard() && !stockClient.canSetClipboard());
     }
 };
 

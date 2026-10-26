@@ -4,6 +4,7 @@
 #include "nvapp.h"
 #include "nvaddress.h"
 #include "launchwarning.h"
+#include "apollocapabilities.h"
 #include "streaming/video/pyrowave/pyrowavelinkpolicy.h"
 #include <atomic>
 #include <functional>
@@ -165,6 +166,19 @@ public:
     // from an NvComputer.
     void setRequestVirtualDisplay(bool requestVirtualDisplay);
 
+    // Apollo/Vibepollo permission mask; set from the host's /serverinfo
+    // when constructed from an NvComputer
+    void setApolloPermissions(bool known, uint32_t permissions);
+
+    // Text clipboard of an Apollo or Vibepollo host, over the paired HTTPS
+    // port. The host only answers while this client is streaming from it.
+    // Both throw without contacting the host unless it is paired and has
+    // granted the matching permission.
+    bool canReadClipboard() const;
+    bool canSetClipboard() const;
+    QString getClipboardText();
+    void setClipboardText(const QString& text);
+
     NvAddress address();
 
     QSslCertificate serverCert();
@@ -222,11 +236,14 @@ private:
                    const std::function<QString(QNetworkReply*)>& receiveHeaders = {},
                    bool powerAction = false,
                    QNetworkAccessManager::Operation operation = QNetworkAccessManager::GetOperation,
-                   QSslCertificate pairedServerCert = QSslCertificate());
+                   QSslCertificate pairedServerCert = QSslCertificate(),
+                   const QByteArray& postBody = QByteArray(),
+                   const QString& postContentType = QString());
 
     NvAddress m_Address;
     QNetworkAccessManager* m_Nam;
     QSslCertificate m_ServerCert;
     bool m_UseTrueUid;
     bool m_RequestVirtualDisplay = false;
+    ApolloCapabilities m_ApolloPermissions;
 };

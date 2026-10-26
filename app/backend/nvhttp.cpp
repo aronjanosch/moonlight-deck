@@ -50,6 +50,48 @@ NvHTTP::NvHTTP(NvComputer* computer, QNetworkAccessManager* nam) :
 {
     // Only hosts that advertise virtual displays understand the request
     m_RequestVirtualDisplay = computer->requestVirtualDisplay && computer->virtualDisplayCapable;
+    setApolloPermissions(computer->apolloPermissionsKnown, computer->apolloPermissions);
+}
+
+void NvHTTP::setApolloPermissions(bool known, uint32_t permissions)
+{
+    m_ApolloPermissions.permissionsKnown = known;
+    m_ApolloPermissions.permissions = permissions;
+}
+
+bool NvHTTP::canReadClipboard() const
+{
+    return !m_ServerCert.isNull() && m_ApolloPermissions.allows(ApolloCapabilities::Permission::ClipboardRead);
+}
+
+bool NvHTTP::canSetClipboard() const
+{
+    return !m_ServerCert.isNull() && m_ApolloPermissions.allows(ApolloCapabilities::Permission::ClipboardSet);
+}
+
+// Ported from Artemis Qt app/backend/nvhttp.cpp (getClipboardContent and
+// sendClipboardContent). The text itself is never logged.
+QString NvHTTP::getClipboardText()
+{
+    if (!canReadClipboard()) {
+        throw std::runtime_error("The host has not allowed this device to read its clipboard.");
+    }
+
+    return openConnectionToString(m_BaseUrlHttps, "actions/clipboard", "type=text",
+                                  REQUEST_TIMEOUT_MS, NvLogLevel::NVLL_ERROR);
+}
+
+void NvHTTP::setClipboardText(const QString& text)
+{
+    if (!canSetClipboard()) {
+        throw std::runtime_error("The host has not allowed this device to set its clipboard.");
+    }
+
+    QNetworkReply* reply = openConnection(m_BaseUrlHttps, "actions/clipboard", "type=text",
+                                          REQUEST_TIMEOUT_MS, NvLogLevel::NVLL_ERROR, {}, false,
+                                          QNetworkAccessManager::PostOperation, QSslCertificate(),
+                                          text.toUtf8(), "text/plain; charset=utf-8");
+    delete reply;
 }
 
 void NvHTTP::setServerCert(QSslCertificate serverCert)
@@ -681,7 +723,9 @@ NvHTTP::openConnection(QUrl baseUrl,
                        const std::function<QString(QNetworkReply*)>& receiveHeaders,
                        bool powerAction,
                        QNetworkAccessManager::Operation operation,
-                       QSslCertificate pairedServerCert)
+                       QSslCertificate pairedServerCert,
+                       const QByteArray& postBody,
+                       const QString& postContentType)
 {
     // Port must be set
     Q_ASSERT(baseUrl.port(0) != 0);
@@ -705,6 +749,9 @@ NvHTTP::openConnection(QUrl baseUrl,
         request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::ManualRedirectPolicy);
         if (operation == QNetworkAccessManager::PostOperation)
             request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+    }
+    else if (!postContentType.isEmpty()) {
+        request.setHeader(QNetworkRequest::ContentTypeHeader, postContentType);
     }
 
     // Add our client certificate
@@ -763,7 +810,7 @@ NvHTTP::openConnection(QUrl baseUrl,
         sslErrorsConnection = connect(network, &QNetworkAccessManager::sslErrors, this, &NvHTTP::handleSslErrors);
     }
     QNetworkReply* reply = operation == QNetworkAccessManager::PostOperation
-        ? network->post(request, QByteArray()) : network->get(request);
+        ? network->post(request, postBody) : network->get(request);
     if (powerAction) connect(reply, &QObject::destroyed, network, &QObject::deleteLater);
 
     // Run the request with a timeout if requested
