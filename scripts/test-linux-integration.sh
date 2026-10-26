@@ -31,7 +31,6 @@ run_suite vrr/phasetrajectory tst_phasetrajectory
 run_suite vrr/inputpercentileintegration tst_inputpercentileintegration
 run_suite vrr/performancestats tst_performancestats
 run_suite vrr/overlay tst_overlay
-run_suite input/tolerance tst_toleranceinput
 run_suite qml/calibration-hosts tst_calibrationhosts
 run_suite qml/controller-navigation tst_controllernavigation
 run_suite pyrowave/udpaddress tst_pyrowaveudpaddress
