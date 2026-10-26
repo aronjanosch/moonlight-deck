@@ -11,6 +11,7 @@ public:
     bool operator==(const NvApp& other) const
     {
         return id == other.id &&
+                uuid == other.uuid &&
                 name == other.name &&
                 hdrSupported == other.hdrSupported &&
                 isAppCollectorGame == other.isAppCollectorGame &&
@@ -34,6 +35,8 @@ public:
     serialize(QSettings& settings) const;
 
     int id = 0;
+    // Sent by Apollo and Vibepollo; empty for other hosts
+    QString uuid;
     QString name;
     bool hdrSupported = false;
     bool isAppCollectorGame = false;

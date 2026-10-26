@@ -245,6 +245,7 @@ HEADERS += \
     SDL_compat.h \
     backend/nvaddress.h \
     backend/nvapp.h \
+    backend/hostcontrols.h \
     cli/pair.h \
     settings/compatfetcher.h \
     settings/mappingfetcher.h \
@@ -253,6 +254,7 @@ HEADERS += \
     backend/identitymanager.h \
     backend/nvcomputer.h \
     backend/framelimitercapabilities.h \
+    backend/apollocapabilities.h \
     backend/nvhttp.h \
     backend/poweractions.h \
     backend/launchwarning.h \

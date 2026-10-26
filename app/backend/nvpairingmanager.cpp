@@ -1,4 +1,5 @@
 #include "nvpairingmanager.h"
+#include "otppairing.h"
 #include "utils.h"
 
 #include <stdexcept>
@@ -206,6 +207,18 @@ NvPairingManager::saltPin(const QByteArray& salt, QString pin)
 NvPairingManager::PairState
 NvPairingManager::pair(QString appVersion, QString pin, QSslCertificate& serverCert)
 {
+    return pair(appVersion, pin, std::nullopt, serverCert);
+}
+
+NvPairingManager::PairState
+NvPairingManager::pairWithOtp(QString appVersion, QString pin, QString passphrase, QSslCertificate& serverCert)
+{
+    return pair(appVersion, pin, std::optional<QString>(passphrase), serverCert);
+}
+
+NvPairingManager::PairState
+NvPairingManager::pair(QString appVersion, QString pin, const std::optional<QString>& otpPassphrase, QSslCertificate& serverCert)
+{
     int serverMajorVersion = NvHTTP::parseQuad(appVersion).at(0);
     qInfo() << "Pairing with server generation:" << serverMajorVersion;
 
@@ -230,11 +243,17 @@ NvPairingManager::pair(QString appVersion, QString pin, QSslCertificate& serverC
     QByteArray aesKey = QCryptographicHash::hash(saltedPin, hashAlgo).constData();
     aesKey.truncate(16);
 
+    // The host checks the one-time PIN right away instead of waiting for
+    // the user to enter a PIN. The request carries a hash that could be
+    // brute-forced offline, so it is never logged.
+    const QString saltHex = QString::fromLatin1(salt.toHex());
+    const QString otpAuth = otpPassphrase ? OtpPairing::authHash(pin, saltHex, *otpPassphrase) : QString();
     QString getCert = m_Http.openConnectionToString(m_Http.m_BaseUrlHttp,
                                                     "pair",
-                                                    "devicename=roth&updateState=1&phrase=getservercert&salt=" +
-                                                    salt.toHex() + "&clientcert=" + IdentityManager::get()->getCertificate().toHex(),
-                                                    0);
+                                                    OtpPairing::getServerCertArguments(
+                                                        saltHex, QString::fromLatin1(IdentityManager::get()->getCertificate().toHex()), otpAuth),
+                                                    otpPassphrase ? REQUEST_TIMEOUT_MS : 0,
+                                                    otpPassphrase ? NvHTTP::NVLL_NONE : NvHTTP::NVLL_VERBOSE);
     NvHTTP::verifyResponseStatus(getCert);
     if (NvHTTP::getXmlString(getCert, "paired") != "1")
     {

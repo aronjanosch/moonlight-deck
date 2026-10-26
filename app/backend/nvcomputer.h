@@ -110,6 +110,15 @@ public:
     bool frameLimiterEnabled = false;
     bool virtualDisplayFrameLimiterEnabled = false;
     uint32_t frameLimiterFpsLimitMilliHz = 0;
+    // Optional Apollo/Vibepollo /serverinfo extensions; see apollocapabilities.h
+    // Apollo and Vibepollo always send <Permission>, even unpaired
+    bool otpPairingSupported = false;
+    bool apolloPermissionsKnown = false;
+    uint32_t apolloPermissions = 0;
+    QStringList serverCommands;
+    bool virtualDisplayCapable = false;
+    bool virtualDisplayDriverReady = false;
+    bool virtualDisplayHdrCapable = false;
 
     // Persisted traits
     NvAddress localAddress;
@@ -123,6 +132,9 @@ public:
     QSslCertificate serverCert;
     QVector<NvApp> appList;
     bool isNvidiaServerSoftware;
+    // Client-side choice to stream from a virtual display on hosts that
+    // advertise VirtualDisplayCapable
+    bool requestVirtualDisplay = false;
     // Remember to update isEqualSerialized() when adding fields here!
 
     // Synchronization

@@ -7,6 +7,8 @@
 #include "settings/mappingmanager.h"
 
 #define AXIS_NAVIGATION_REPEAT_DELAY 150
+#define DPAD_REPEAT_INITIAL_DELAY 380
+#define DPAD_REPEAT_INTERVAL 90
 
 SdlGamepadKeyNavigation::SdlGamepadKeyNavigation(StreamingPreferences* prefs)
     : m_Prefs(prefs),
@@ -14,7 +16,9 @@ SdlGamepadKeyNavigation::SdlGamepadKeyNavigation(StreamingPreferences* prefs)
       m_UiNavMode(false),
       m_FirstPoll(false),
       m_HasFocus(false),
-      m_LastAxisNavigationEventTime(0)
+      m_LastAxisNavigationEventTime(0),
+      m_RepeatButtonId(0),
+      m_NextRepeatTime(0)
 {
     m_PollingTimer = new QTimer(this);
     connect(m_PollingTimer, &QTimer::timeout, this, &SdlGamepadKeyNavigation::onPollingTimerFired);
@@ -155,6 +159,18 @@ void SdlGamepadKeyNavigation::onPollingTimerFired()
                 if (!target) return;
                 m_PressedControllerKeys.insert(buttonId, {key, modifiers, target});
                 sendKey(type, key, modifiers, target);
+
+                switch (event.cbutton.button) {
+                case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+                case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+                    m_RepeatButtonId = buttonId;
+                    m_NextRepeatTime = SDL_GetTicks() + DPAD_REPEAT_INITIAL_DELAY;
+                    break;
+                default:
+                    break;
+                }
             };
 
             // Swap face buttons if needed
@@ -220,6 +236,15 @@ void SdlGamepadKeyNavigation::onPollingTimerFired()
                 // by the control in focus.
                 sendControllerKey(Qt::Key_Hangup);
                 break;
+            case SDL_CONTROLLER_BUTTON_BACK:
+                sendControllerKey(Qt::Key_Context1);
+                break;
+            case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+                sendControllerKey(Qt::Key_PageUp);
+                break;
+            case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+                sendControllerKey(Qt::Key_PageDown);
+                break;
             default:
                 break;
             }
@@ -241,6 +266,21 @@ void SdlGamepadKeyNavigation::onPollingTimerFired()
                 }
             }
             break;
+        }
+    }
+
+    // Repeat a held D-pad direction like a held arrow key
+    if (m_RepeatButtonId != 0 && SDL_TICKS_PASSED(SDL_GetTicks(), m_NextRepeatTime)) {
+        if (m_PressedControllerKeys.contains(m_RepeatButtonId)) {
+            const auto& key = m_PressedControllerKeys[m_RepeatButtonId];
+            if (key.window) {
+                QKeyEvent repeatEvent(QEvent::KeyPress, key.key, key.modifiers, QString(), true);
+                QGuiApplication::sendEvent(key.window, &repeatEvent);
+            }
+            m_NextRepeatTime = SDL_GetTicks() + DPAD_REPEAT_INTERVAL;
+        }
+        else {
+            m_RepeatButtonId = 0;
         }
     }
 
@@ -294,6 +334,7 @@ void SdlGamepadKeyNavigation::releaseControllerKeys()
     // Clear before dispatch: a receiver may synchronously change focus/mode.
     const auto pressed = m_PressedControllerKeys;
     m_PressedControllerKeys.clear();
+    m_RepeatButtonId = 0;
     for (const auto& key : pressed) {
         if (key.window) sendKey(QEvent::KeyRelease, key.key, key.modifiers, key.window);
     }

@@ -17,7 +17,12 @@ class ComputerModel : public QAbstractListModel
         WakeableRole,
         StatusUnknownRole,
         ServerSupportedRole,
-        DetailsRole
+        DetailsRole,
+        VirtualDisplayCapableRole,
+        VirtualDisplayReadyRole,
+        VirtualDisplayHdrCapableRole,
+        OtpPairingSupportedRole,
+        VirtualDisplayRequestedRole,
     };
 
 public:
@@ -38,11 +43,17 @@ public:
 
     Q_INVOKABLE void pairComputer(int computerIndex, QString pin);
 
+    // Returns a message for an invalid PIN or passphrase, or an empty
+    // string once pairing has started
+    Q_INVOKABLE QString pairComputerWithOtp(int computerIndex, QString pin, QString passphrase);
+
     Q_INVOKABLE void testConnectionForComputer(int computerIndex);
 
     Q_INVOKABLE void wakeComputer(int computerIndex);
 
     Q_INVOKABLE void renameComputer(int computerIndex, QString name);
+
+    Q_INVOKABLE void setVirtualDisplayRequested(int computerIndex, bool requested);
 
     Q_INVOKABLE QString uuidAt(int computerIndex) const;
 

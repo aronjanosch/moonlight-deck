@@ -51,6 +51,9 @@ private:
     bool m_FirstPoll;
     bool m_HasFocus;
     Uint32 m_LastAxisNavigationEventTime;
+    // A held D-pad direction repeats like a held keyboard arrow key
+    quint64 m_RepeatButtonId;
+    Uint32 m_NextRepeatTime;
     // Popups can change navigation mode during a button press. Its release
     // must still match the key and modifiers sent for that same press.
     struct ControllerKey {

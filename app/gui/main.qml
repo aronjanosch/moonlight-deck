@@ -115,7 +115,12 @@ ApplicationWindow {
             // Perform our early initialization before constructing
             // the initial view and pushing it to the StackView
             doEarlyInit()
-            push(initialView)
+            if (initialView === "qrc:/gui/PcView.qml" && StreamingPreferences.couchUi) {
+                push("qrc:/gui/couch/CouchHome.qml")
+            }
+            else {
+                push(initialView)
+            }
         }
 
         onCurrentItemChanged: {

@@ -48,6 +48,50 @@ NvHTTP::NvHTTP(NvAddress address, uint16_t httpsPort, QSslCertificate serverCert
 NvHTTP::NvHTTP(NvComputer* computer, QNetworkAccessManager* nam) :
     NvHTTP(computer->activeAddress, computer->activeHttpsPort, computer->serverCert, !computer->isNvidiaServerSoftware, nam)
 {
+    // Only hosts that advertise virtual displays understand the request
+    m_RequestVirtualDisplay = computer->requestVirtualDisplay && computer->virtualDisplayCapable;
+    setApolloPermissions(computer->apolloPermissionsKnown, computer->apolloPermissions);
+}
+
+void NvHTTP::setApolloPermissions(bool known, uint32_t permissions)
+{
+    m_ApolloPermissions.permissionsKnown = known;
+    m_ApolloPermissions.permissions = permissions;
+}
+
+bool NvHTTP::canReadClipboard() const
+{
+    return !m_ServerCert.isNull() && m_ApolloPermissions.allows(ApolloCapabilities::Permission::ClipboardRead);
+}
+
+bool NvHTTP::canSetClipboard() const
+{
+    return !m_ServerCert.isNull() && m_ApolloPermissions.allows(ApolloCapabilities::Permission::ClipboardSet);
+}
+
+// Ported from Artemis Qt app/backend/nvhttp.cpp (getClipboardContent and
+// sendClipboardContent). The text itself is never logged.
+QString NvHTTP::getClipboardText()
+{
+    if (!canReadClipboard()) {
+        throw std::runtime_error("The host has not allowed this device to read its clipboard.");
+    }
+
+    return openConnectionToString(m_BaseUrlHttps, "actions/clipboard", "type=text",
+                                  REQUEST_TIMEOUT_MS, NvLogLevel::NVLL_ERROR);
+}
+
+void NvHTTP::setClipboardText(const QString& text)
+{
+    if (!canSetClipboard()) {
+        throw std::runtime_error("The host has not allowed this device to set its clipboard.");
+    }
+
+    QNetworkReply* reply = openConnection(m_BaseUrlHttps, "actions/clipboard", "type=text",
+                                          REQUEST_TIMEOUT_MS, NvLogLevel::NVLL_ERROR, {}, false,
+                                          QNetworkAccessManager::PostOperation, QSslCertificate(),
+                                          text.toUtf8(), "text/plain; charset=utf-8");
+    delete reply;
 }
 
 void NvHTTP::setServerCert(QSslCertificate serverCert)
@@ -70,6 +114,11 @@ void NvHTTP::setAddress(NvAddress address)
 void NvHTTP::setHttpsPort(uint16_t port)
 {
     m_BaseUrlHttps.setPort(port);
+}
+
+void NvHTTP::setRequestVirtualDisplay(bool requestVirtualDisplay)
+{
+    m_RequestVirtualDisplay = requestVirtualDisplay;
 }
 
 void NvHTTP::setTrueUid(bool useTrueUid)
@@ -388,6 +437,10 @@ NvHTTP::startApp(QString verb,
                                    // (Vibeshine: 1000 Hz virtual display in its Automatic mode).
                                    // Other hosts ignore unknown launch parameters.
                                    (clientVrrRequested ? "&clientVrrRequested=1" : "")+
+                                   // Apollo/Vibepollo extension, as sent by Artemis. Only ever sent
+                                   // as 1: Vibepollo reads an explicit 0 as "disable the virtual
+                                   // display this host or app would otherwise use".
+                                   (m_RequestVirtualDisplay ? "&virtualDisplay=1" : "")+
                                    LiGetLaunchUrlQueryParameters(),
                                    LAUNCH_TIMEOUT_MS);
 
@@ -490,6 +543,9 @@ NvHTTP::getAppList()
                 }
                 else if (XML_NAME_EQUALS(name, "ID")) {
                     apps.last().id = xmlReader.readElementText().toInt();
+                }
+                else if (XML_NAME_EQUALS(name, "UUID")) {
+                    apps.last().uuid = xmlReader.readElementText().trimmed();
                 }
                 else if (XML_NAME_EQUALS(name, "IsHdrSupported")) {
                     apps.last().hdrSupported = xmlReader.readElementText() == "1";
@@ -667,7 +723,9 @@ NvHTTP::openConnection(QUrl baseUrl,
                        const std::function<QString(QNetworkReply*)>& receiveHeaders,
                        bool powerAction,
                        QNetworkAccessManager::Operation operation,
-                       QSslCertificate pairedServerCert)
+                       QSslCertificate pairedServerCert,
+                       const QByteArray& postBody,
+                       const QString& postContentType)
 {
     // Port must be set
     Q_ASSERT(baseUrl.port(0) != 0);
@@ -691,6 +749,9 @@ NvHTTP::openConnection(QUrl baseUrl,
         request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::ManualRedirectPolicy);
         if (operation == QNetworkAccessManager::PostOperation)
             request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+    }
+    else if (!postContentType.isEmpty()) {
+        request.setHeader(QNetworkRequest::ContentTypeHeader, postContentType);
     }
 
     // Add our client certificate
@@ -749,7 +810,7 @@ NvHTTP::openConnection(QUrl baseUrl,
         sslErrorsConnection = connect(network, &QNetworkAccessManager::sslErrors, this, &NvHTTP::handleSslErrors);
     }
     QNetworkReply* reply = operation == QNetworkAccessManager::PostOperation
-        ? network->post(request, QByteArray()) : network->get(request);
+        ? network->post(request, postBody) : network->get(request);
     if (powerAction) connect(reply, &QObject::destroyed, network, &QObject::deleteLater);
 
     // Run the request with a timeout if requested

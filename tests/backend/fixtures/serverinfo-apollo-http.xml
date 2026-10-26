@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root status_code="200">
+  <hostname>TestHost</hostname>
+  <appversion>7.1.431.-1</appversion>
+  <uniqueid>00000000-0000-0000-0000-000000000002</uniqueid>
+  <PairStatus>0</PairStatus>
+  <currentgame>0</currentgame>
+  <state>SUNSHINE_SERVER_FREE</state>
+  <VirtualDisplayCapable>true</VirtualDisplayCapable>
+  <VirtualDisplayDriverReady>true</VirtualDisplayDriverReady>
+  <mac>00:00:00:00:00:00</mac>
+  <Permission>0</Permission>
+</root>

@@ -69,6 +69,7 @@
 #define SER_BACKGROUNDGAMEPAD "backgroundgamepad"
 #define SER_REVERSESCROLL "reversescroll"
 #define SER_SWAPFACEBUTTONS "swapfacebuttons"
+#define SER_COUCHUI "couchui"
 #define SER_CAPTURESYSKEYS "capturesyskeys"
 #define SER_STEAMCONTROLLERDRIVER "steamcontrollerdriver"
 #define SER_STEAMCONTROLLERMOTION "steamcontrollermotion"
@@ -243,6 +244,7 @@ void StreamingPreferences::reload()
     backgroundGamepad = settings.value(SER_BACKGROUNDGAMEPAD, false).toBool();
     reverseScrollDirection = settings.value(SER_REVERSESCROLL, false).toBool();
     swapFaceButtons = settings.value(SER_SWAPFACEBUTTONS, false).toBool();
+    couchUi = settings.value(SER_COUCHUI, true).toBool();
     keepAwake = settings.value(SER_KEEPAWAKE, true).toBool();
     enableHdr = settings.value(SER_HDR, false).toBool();
     captureSysKeysMode = static_cast<CaptureSysKeysMode>(settings.value(SER_CAPTURESYSKEYS,
@@ -487,6 +489,7 @@ void StreamingPreferences::save()
     settings.setValue(SER_BACKGROUNDGAMEPAD, backgroundGamepad);
     settings.setValue(SER_REVERSESCROLL, reverseScrollDirection);
     settings.setValue(SER_SWAPFACEBUTTONS, swapFaceButtons);
+    settings.setValue(SER_COUCHUI, couchUi);
     settings.setValue(SER_CAPTURESYSKEYS, captureSysKeysMode);
     settings.setValue(SER_KEEPAWAKE, keepAwake);
     settings.setValue(SER_STEAMCONTROLLERDRIVER, steamControllerDriver);

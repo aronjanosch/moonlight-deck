@@ -28,7 +28,8 @@ void AppModel::updateFrameLimiterCapabilities()
     if (changed) emit frameLimiterChanged();
 }
 
-void AppModel::initialize(ComputerManager* computerManager, int computerIndex, bool showHiddenGames)
+void AppModel::initialize(ComputerManager* computerManager, int computerIndex, bool showHiddenGames,
+                          bool groupHostControls)
 {
     m_ComputerManager = computerManager;
     connect(m_ComputerManager, &ComputerManager::computerStateChanged,
@@ -38,6 +39,11 @@ void AppModel::initialize(ComputerManager* computerManager, int computerIndex, b
     m_Computer = m_ComputerManager->getComputers().at(computerIndex);
     m_CurrentGameId = m_Computer->currentGameId;
     m_ShowHiddenGames = showHiddenGames;
+    m_GroupHostControls = groupHostControls;
+    {
+        QReadLocker lock(&m_Computer->lock);
+        m_ControlIdFallback = m_Computer->otpPairingSupported;
+    }
 
     updateAppList(m_Computer->appList);
     updateFrameLimiterCapabilities();
@@ -109,19 +115,26 @@ QVariant AppModel::data(const QModelIndex &index, int role) const
         case SleepActionRole: return true;
         case AppIdRole: return 0; // No real app ID; never sent to a host.
         case RunningRole: case HiddenRole: case DirectLaunchRole: case AppCollectorGameRole: return false;
+        case HostControlRole: return QString();
         default: return QVariant();
         }
     }
     if (index.row() < 0 || index.row() >= m_VisibleApps.count()) return QVariant();
     NvApp app = m_VisibleApps.at(index.row());
+    const bool groupedControl = m_GroupHostControls && hostControl(app) != HostControls::Kind::None;
 
     switch (role)
     {
     case NameRole:
-        return app.name;
+        // Vibepollo pads some control titles with spaces to rank them
+        return groupedControl ? app.name.trimmed() : app.name;
     case RunningRole:
         return m_Computer->currentGameId == app.id;
     case BoxArtRole:
+        // Grouped controls are drawn as tiles with their own icon
+        if (groupedControl) {
+            return QUrl();
+        }
         // FIXME: const-correctness
         return const_cast<BoxArtManager&>(m_BoxArtManager).loadBoxArt(m_Computer, app);
     case HiddenRole:
@@ -134,6 +147,8 @@ QVariant AppModel::data(const QModelIndex &index, int role) const
         return app.isAppCollectorGame;
     case SleepActionRole:
         return false;
+    case HostControlRole:
+        return HostControls::name(hostControl(app));
     default:
         return QVariant();
     }
@@ -151,6 +166,7 @@ QHash<int, QByteArray> AppModel::roleNames() const
     names[DirectLaunchRole] = "directLaunch";
     names[AppCollectorGameRole] = "appCollectorGame";
     names[SleepActionRole] = "sleepAction";
+    names[HostControlRole] = "hostControl";
 
     return names;
 }
@@ -180,6 +196,26 @@ void AppModel::requestHostSleep()
         emit hostSleepCompleted(tr("Sleep is unavailable or a request is already pending."));
 }
 
+HostControls::Kind AppModel::hostControl(const NvApp& app) const
+{
+    // Numeric IDs are only trusted from hosts that identify as Apollo-family
+    return HostControls::classify(app, m_ControlIdFallback);
+}
+
+bool AppModel::appLessThan(const NvApp& app1, const NvApp& app2) const
+{
+    if (m_GroupHostControls) {
+        const bool control1 = hostControl(app1) != HostControls::Kind::None;
+        const bool control2 = hostControl(app2) != HostControls::Kind::None;
+        if (control1 != control2) {
+            return control2;
+        }
+        // Controls keep the order Vibepollo ranks them in with leading spaces
+    }
+
+    return app1.name.toLower() < app2.name.toLower();
+}
+
 bool AppModel::isAppCurrentlyVisible(const NvApp& app)
 {
     for (const NvApp& visibleApp : std::as_const(m_VisibleApps)) {
@@ -202,6 +238,13 @@ QVector<NvApp> AppModel::getVisibleApps(const QVector<NvApp>& appList)
         if (m_ShowHiddenGames || !app.hidden || isAppCurrentlyVisible(app)) {
             visibleApps.append(app);
         }
+    }
+
+    // The host's list is already sorted by name
+    if (m_GroupHostControls) {
+        std::stable_sort(visibleApps.begin(), visibleApps.end(), [this](const NvApp& app1, const NvApp& app2) {
+            return appLessThan(app1, app2);
+        });
     }
 
     return visibleApps;
@@ -251,7 +294,7 @@ void AppModel::updateAppList(QVector<NvApp> newList)
                 found = true;
                 break;
             }
-            else if (existingApp.name.toLower() > newApp.name.toLower()) {
+            else if (appLessThan(newApp, existingApp)) {
                 insertionIndex = i;
                 break;
             }
@@ -328,6 +371,25 @@ void AppModel::handleComputerStateChanged(NvComputer* computer)
             m_Computer->pairState == NvComputer::PS_NOT_PAIRED) {
         emit computerLost();
         return;
+    }
+
+    // Which apps count as controls can change once the host has told us
+    // what it is, and grouped controls are ordered after the games
+    bool controlIdFallback;
+    {
+        QReadLocker lock(&m_Computer->lock);
+        controlIdFallback = m_Computer->otpPairingSupported;
+    }
+    if (controlIdFallback != m_ControlIdFallback) {
+        if (m_GroupHostControls) {
+            beginResetModel();
+            m_ControlIdFallback = controlIdFallback;
+            m_VisibleApps = getVisibleApps(m_AllApps);
+            endResetModel();
+        }
+        else {
+            m_ControlIdFallback = controlIdFallback;
+        }
     }
 
     // First, process additions/removals from the app list. This

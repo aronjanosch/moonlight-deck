@@ -212,6 +212,7 @@ public:
     Q_PROPERTY(bool backgroundGamepad MEMBER backgroundGamepad NOTIFY backgroundGamepadChanged)
     Q_PROPERTY(bool reverseScrollDirection MEMBER reverseScrollDirection NOTIFY reverseScrollDirectionChanged)
     Q_PROPERTY(bool swapFaceButtons MEMBER swapFaceButtons NOTIFY swapFaceButtonsChanged)
+    Q_PROPERTY(bool couchUi MEMBER couchUi NOTIFY couchUiChanged)
     Q_PROPERTY(bool keepAwake MEMBER keepAwake NOTIFY keepAwakeChanged)
     Q_PROPERTY(CaptureSysKeysMode captureSysKeysMode MEMBER captureSysKeysMode NOTIFY captureSysKeysModeChanged)
     Q_PROPERTY(bool steamControllerDriver MEMBER steamControllerDriver NOTIFY steamControllerChanged)
@@ -274,6 +275,7 @@ public:
     bool backgroundGamepad;
     bool reverseScrollDirection;
     bool swapFaceButtons;
+    bool couchUi;
     bool keepAwake;
     int packetSize;
     int pyroWavePaceMbps;
@@ -346,6 +348,7 @@ signals:
     void backgroundGamepadChanged();
     void reverseScrollDirectionChanged();
     void swapFaceButtonsChanged();
+    void couchUiChanged();
     void captureSysKeysModeChanged();
     void steamControllerChanged();
     void keepAwakeChanged();

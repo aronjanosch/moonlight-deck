@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root status_code="200">
+  <hostname>TestHost</hostname>
+  <appversion>7.1.431.-1</appversion>
+  <GfeVersion>3.23.0.74</GfeVersion>
+  <uniqueid>00000000-0000-0000-0000-000000000003</uniqueid>
+  <HttpsPort>47984</HttpsPort>
+  <ExternalPort>47989</ExternalPort>
+  <MaxLumaPixelsHEVC>1869449984</MaxLumaPixelsHEVC>
+  <LocalIP>192.0.2.12</LocalIP>
+  <ServerCodecModeSupport>3843</ServerCodecModeSupport>
+  <SupportedDisplayMode>
+    <DisplayMode><Width>1920</Width><Height>1080</Height><RefreshRate>60</RefreshRate></DisplayMode>
+  </SupportedDisplayMode>
+  <PairStatus>1</PairStatus>
+  <currentgame>0</currentgame>
+  <state>SUNSHINE_SERVER_FREE</state>
+  <FrameLimiterSupported>1</FrameLimiterSupported>
+  <FrameLimiterEnabled>0</FrameLimiterEnabled>
+  <VirtualDisplayFrameLimiterEnabled>0</VirtualDisplayFrameLimiterEnabled>
+  <VirtualDisplayCapable>true</VirtualDisplayCapable>
+  <VirtualDisplayDriverReady>false</VirtualDisplayDriverReady>
+  <VirtualDisplayHDRCapable>true</VirtualDisplayHDRCapable>
+  <mac>02:00:00:00:00:02</mac>
+  <Permission>117645056</Permission>
+</root>

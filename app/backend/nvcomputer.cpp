@@ -1,6 +1,7 @@
 #include "nvcomputer.h"
 #include "poweractions.h"
 #include "framelimitercapabilities.h"
+#include "apollocapabilities.h"
 #include "nvapp.h"
 #include "settings/compatfetcher.h"
 
@@ -24,6 +25,7 @@
 #define SER_SRVCERT "srvcert"
 #define SER_CUSTOMNAME "customname"
 #define SER_NVIDIASOFTWARE "nvidiasw"
+#define SER_VIRTUALDISPLAY "virtualdisplay"
 
 NvComputer::NvComputer(QSettings& settings)
 {
@@ -41,6 +43,7 @@ NvComputer::NvComputer(QSettings& settings)
                                     settings.value(SER_MANUALPORT, QVariant(DEFAULT_HTTP_PORT)).toUInt());
     this->serverCert = QSslCertificate(settings.value(SER_SRVCERT).toByteArray());
     this->isNvidiaServerSoftware = settings.value(SER_NVIDIASOFTWARE).toBool();
+    this->requestVirtualDisplay = settings.value(SER_VIRTUALDISPLAY, false).toBool();
 
     int appCount = settings.beginReadArray(SER_APPLIST);
     this->appList.reserve(appCount);
@@ -94,6 +97,13 @@ void NvComputer::serialize(QSettings& settings, bool serializeApps) const
     settings.setValue(SER_MANUALPORT, manualAddress.port());
     settings.setValue(SER_SRVCERT, serverCert.toPem());
     settings.setValue(SER_NVIDIASOFTWARE, isNvidiaServerSoftware);
+    // Only stored while on, so hosts that never use it keep their settings
+    if (requestVirtualDisplay) {
+        settings.setValue(SER_VIRTUALDISPLAY, true);
+    }
+    else {
+        settings.remove(SER_VIRTUALDISPLAY);
+    }
 
     // Avoid deleting an existing applist if we couldn't get one
     if (!appList.isEmpty() && serializeApps) {
@@ -119,6 +129,7 @@ bool NvComputer::isEqualSerialized(const NvComputer &that) const
            this->manualAddress == that.manualAddress &&
            this->serverCert == that.serverCert &&
            this->isNvidiaServerSoftware == that.isNvidiaServerSoftware &&
+           this->requestVirtualDisplay == that.requestVirtualDisplay &&
            this->appList == that.appList;
 }
 
@@ -179,6 +190,15 @@ NvComputer::NvComputer(NvHTTP& http, QString serverInfo)
     this->frameLimiterEnabled = limiter.enabled;
     this->virtualDisplayFrameLimiterEnabled = limiter.virtualDisplayEnabled;
     this->frameLimiterFpsLimitMilliHz = limiter.fpsLimitMilliHz;
+
+    const auto apollo = ApolloCapabilities::fromServerInfo(serverInfo);
+    this->otpPairingSupported = apollo.permissionAdvertised;
+    this->apolloPermissionsKnown = apollo.permissionsKnown;
+    this->apolloPermissions = apollo.permissions;
+    this->serverCommands = apollo.serverCommands;
+    this->virtualDisplayCapable = apollo.virtualDisplayCapable;
+    this->virtualDisplayDriverReady = apollo.virtualDisplayDriverReady;
+    this->virtualDisplayHdrCapable = apollo.virtualDisplayHdrCapable;
 
     this->displayModes = NvHTTP::getDisplayModeList(serverInfo);
     std::stable_sort(this->displayModes.begin(), this->displayModes.end(),
@@ -584,6 +604,13 @@ bool NvComputer::update(const NvComputer& that)
     ASSIGN_IF_CHANGED(frameLimiterEnabled);
     ASSIGN_IF_CHANGED(virtualDisplayFrameLimiterEnabled);
     ASSIGN_IF_CHANGED(frameLimiterFpsLimitMilliHz);
+    ASSIGN_IF_CHANGED(otpPairingSupported);
+    ASSIGN_IF_CHANGED(apolloPermissionsKnown);
+    ASSIGN_IF_CHANGED(apolloPermissions);
+    ASSIGN_IF_CHANGED(serverCommands);
+    ASSIGN_IF_CHANGED(virtualDisplayCapable);
+    ASSIGN_IF_CHANGED(virtualDisplayDriverReady);
+    ASSIGN_IF_CHANGED(virtualDisplayHdrCapable);
     ASSIGN_IF_CHANGED(currentGameId);
     ASSIGN_IF_CHANGED(activeAddress);
     ASSIGN_IF_CHANGED(state);
