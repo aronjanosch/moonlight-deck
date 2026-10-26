@@ -122,7 +122,12 @@ FocusScope {
             model.initialize(ComputerManager, hostIndex, showHidden, true)
             model.hostSleepCompleted.connect(hostSleepCompleted)
             appModel = model
-            shelf.currentIndex = Math.max(0, Math.min(lastAppIndex[wanted] || 0, shelf.count - 1))
+            // Start on the host's direct launch game, as the classic interface would
+            var startIndex = lastAppIndex[wanted]
+            if (startIndex === undefined) {
+                startIndex = Math.max(0, model.getDirectLaunchAppIndex())
+            }
+            shelf.currentIndex = Math.max(0, Math.min(startIndex, shelf.count - 1))
             shelf.positionViewAtIndex(shelf.currentIndex, ListView.Beginning)
         }
 
@@ -510,6 +515,19 @@ FocusScope {
         if (item.running) {
             actions.push({ text: qsTr("Quit game"), run: confirmQuitGame })
         }
+        // Shared with the classic interface, which starts this game as
+        // soon as the host is opened. Not for session controls: the
+        // classic interface would run Terminate on every visit.
+        if (!hidden && !item.isControl) {
+            var directLaunch = item.directLaunch
+            var name = item.name
+            var hostName = host ? host.hostName : ""
+            actions.push({ text: directLaunch ? qsTr("Clear direct launch") : qsTr("Use as direct launch"), run: function() {
+                appModel.setAppDirectLaunch(index, !directLaunch)
+                showToast(directLaunch ? qsTr("%1 no longer has a direct launch game").arg(hostName)
+                                       : qsTr("%1 is now the direct launch game for %2").arg(name).arg(hostName))
+            } })
+        }
         if (hidden || (!item.running && !item.directLaunch)) {
             actions.push({ text: qsTr("Hide game"), checked: hidden,
                            run: function() { appModel.setAppHidden(index, !hidden) } })
@@ -749,6 +767,11 @@ FocusScope {
             CouchBadge {
                 visible: game !== null && game.hidden
                 text: qsTr("HIDDEN")
+            }
+
+            CouchBadge {
+                visible: game !== null && game.directLaunch
+                text: qsTr("DIRECT LAUNCH")
             }
 
             Text {
