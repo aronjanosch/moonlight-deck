@@ -205,6 +205,14 @@ bool WMUtils::isRunningDesktopEnvironment()
 #endif
 }
 
+bool WMUtils::isRunningGamescopeSession()
+{
+    // SteamOS Gaming Mode runs every window inside Gamescope, which
+    // scales a window that doesn't fill the screen and letterboxes it
+    const QStringList desktops = qEnvironmentVariable("XDG_CURRENT_DESKTOP").split(':');
+    return desktops.contains("gamescope", Qt::CaseInsensitive);
+}
+
 bool WMUtils::isGpuSlow()
 {
     bool ret;

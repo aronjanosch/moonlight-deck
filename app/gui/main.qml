@@ -35,8 +35,9 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
-        // Show the window according to the user's preferences
-        if (SystemProperties.hasDesktopEnvironment) {
+        // Show the window according to the user's preferences.
+        // Gamescope would letterbox anything but a fullscreen window.
+        if (SystemProperties.hasDesktopEnvironment && !SystemProperties.isGamescopeSession) {
             if (StreamingPreferences.uiDisplayMode == StreamingPreferences.UI_MAXIMIZED) {
                 window.showMaximized()
             }

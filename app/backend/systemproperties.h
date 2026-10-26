@@ -22,6 +22,7 @@ public:
     Q_PROPERTY(bool isDarwin MEMBER isDarwin CONSTANT)
     Q_PROPERTY(QString friendlyNativeArchName MEMBER friendlyNativeArchName CONSTANT)
     Q_PROPERTY(bool hasDesktopEnvironment MEMBER hasDesktopEnvironment CONSTANT)
+    Q_PROPERTY(bool isGamescopeSession MEMBER isGamescopeSession CONSTANT)
     Q_PROPERTY(bool hasBrowser MEMBER hasBrowser CONSTANT)
     Q_PROPERTY(bool hasDiscordIntegration MEMBER hasDiscordIntegration CONSTANT)
     Q_PROPERTY(bool hasPyroWave MEMBER hasPyroWave CONSTANT)
@@ -64,6 +65,7 @@ private:
     bool isWow64;
     QString friendlyNativeArchName;
     bool hasDesktopEnvironment;
+    bool isGamescopeSession;
     bool hasBrowser;
     bool hasDiscordIntegration;
     bool hasPyroWave;
