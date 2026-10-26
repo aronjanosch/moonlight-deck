@@ -109,6 +109,16 @@ ApplicationWindow {
         }
     }
 
+    // The couch pages scale with the window. One binding here, not one
+    // per page: a page that goes away would otherwise restore the scale
+    // it found, which is stale if the window changed in between, such as
+    // during a stream.
+    Binding {
+        target: CouchTheme
+        property: "s"
+        value: CouchTheme.scaleFor(window.width, window.height)
+    }
+
     StackView {
         id: stackView
         anchors.fill: parent

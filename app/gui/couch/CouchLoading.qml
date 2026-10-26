@@ -19,11 +19,6 @@ Item {
     property real progress: -1
     property bool shown: false
 
-    Binding {
-        target: CouchTheme
-        property: "s"
-        value: CouchTheme.scaleFor(loading.width, loading.height)
-    }
 
     Rectangle {
         anchors.fill: parent

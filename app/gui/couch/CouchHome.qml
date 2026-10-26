@@ -61,11 +61,6 @@ FocusScope {
     readonly property int coverHeight: CouchTheme.px(380)
     readonly property int coverWidth: Math.round(coverHeight * 0.7)
 
-    Binding {
-        target: CouchTheme
-        property: "s"
-        value: CouchTheme.scaleFor(home.width, home.height)
-    }
 
     onAppModelKeyChanged: Qt.callLater(syncAppModel)
     onModeChanged: {

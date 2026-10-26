@@ -2,6 +2,7 @@ import QtQuick 2.9
 import QtQuick.Controls 2.2
 import QtTest 1.2
 import StreamingPreferences 1.0
+import "../../app/gui/couch"
 
 // The settings page as main.qml shows it: pushed onto a StackView whose
 // context provides window, toolBar and stackView. Keys are the ones the
@@ -18,6 +19,13 @@ Item {
     function goBack() { stackView.pop() }
 
     Item { id: toolBar }
+
+    // As in main.qml
+    Binding {
+        target: CouchTheme
+        property: "s"
+        value: CouchTheme.scaleFor(window.width, window.height)
+    }
 
     StackView {
         id: stackView
@@ -244,6 +252,17 @@ Item {
             tryCompare(stackView, "depth", 1)
             verify(StreamingPreferences.saves > saves)
             verify(toolBar.visible)
+        }
+
+        // A page that closes must not leave its own scale behind, such
+        // as after the window changed size during a stream
+        function test_scale_follows_window_after_close() {
+            window.width = 3840; window.height = 2160
+            compare(CouchTheme.s, CouchTheme.scaleFor(3840, 2160))
+            page.goBack()
+            tryCompare(stackView, "depth", 1)
+            window.width = 1280; window.height = 800
+            compare(CouchTheme.s, 1)
         }
 
         function test_layouts() {

@@ -30,11 +30,6 @@ FocusScope {
     // Too little room beside the content puts the sections in a row on top
     readonly property bool narrow: width < CouchTheme.px(960)
 
-    Binding {
-        target: CouchTheme
-        property: "s"
-        value: CouchTheme.scaleFor(settingsPage.width, settingsPage.height)
-    }
 
     StackView.onActivated: {
         toolBar.visible = false

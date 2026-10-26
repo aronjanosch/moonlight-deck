@@ -4,7 +4,7 @@ import QtQuick 2.9
 import StreamingPreferences 1.0
 
 // Shared look of the couch interface. Sizes are authored for the
-// Steam Deck's 1280x800 panel and scaled by CouchHome to the window.
+// Steam Deck's 1280x800 panel and scaled by main.qml to the window.
 QtObject {
     property real s: 1.0
 
