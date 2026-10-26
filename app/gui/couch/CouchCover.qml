@@ -23,7 +23,7 @@ Item {
     // Same detection as AppView: GFE and our own placeholder sizes
     readonly property bool isControl: hostControl !== ""
     readonly property bool isPlaceholder: sleepAction || isControl ||
-        art.status === Image.Error ||
+        String(boxart) === "" || art.status === Image.Error ||
         (!appCollectorGame &&
          ((art.sourceSize.width === 130 && art.sourceSize.height === 180) ||
           (art.sourceSize.width === 628 && art.sourceSize.height === 888) ||

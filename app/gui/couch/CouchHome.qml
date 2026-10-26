@@ -452,7 +452,9 @@ FocusScope {
         var segue = component.createObject(stackView, {
                                                "appName": name,
                                                "session": appModel.createSessionForApp(index),
-                                               "isResume": runningId === appId
+                                               "isResume": runningId === appId,
+                                               "boxart": item.boxart,
+                                               "hostName": host ? host.hostName : ""
                                            })
         stackView.push(segue)
     }
@@ -464,10 +466,22 @@ FocusScope {
             "appName": model.getRunningAppName(),
             "quitRunningAppFn": function() { model.quitRunningApp() },
             "nextAppName": nextIndex >= 0 ? nextName : null,
-            "nextSession": nextIndex >= 0 ? model.createSessionForApp(nextIndex) : null
+            "nextSession": nextIndex >= 0 ? model.createSessionForApp(nextIndex) : null,
+            "boxart": runningBoxart(),
+            "nextBoxart": nextIndex >= 0 && shelf.currentItem ? shelf.currentItem.boxart : "",
+            "hostName": host ? host.hostName : ""
         }
         var component = Qt.createComponent("qrc:/gui/QuitSegue.qml")
         stackView.push(component.createObject(stackView, params))
+    }
+
+    // The cover of the game the host is running, if the shelf shows it
+    function runningBoxart() {
+        for (var i = 0; i < shelf.count; i++) {
+            var item = shelf.itemAtIndex(i)
+            if (item && item.running) return item.boxart
+        }
+        return ""
     }
 
     function confirmQuitGame() {

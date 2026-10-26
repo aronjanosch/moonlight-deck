@@ -5,6 +5,7 @@ import QtQuick.Window 2.2
 import SdlGamepadKeyNavigation 1.0
 import Session 1.0
 import SystemProperties 1.0
+import "couch"
 
 Item {
     property Session session
@@ -13,11 +14,17 @@ Item {
                                            qsTr("Starting %1...").arg(appName)
     property bool isResume : false
     property bool quitAfter : false
+    property url boxart
+    property string hostName
+    // Connection stages moonlight-common-c reports before the stream starts
+    readonly property int stageCount: 11
+    property int stagesStarted: 0
 
     function stageStarting(stage)
     {
-        // Update the spinner text
+        // Update the status text and progress
         stageText = qsTr("Starting %1...").arg(stage)
+        stagesStarted++
     }
 
     function stageFailed(stage, errorCode, failingPorts)
@@ -34,9 +41,7 @@ Item {
     {
         // Hide the UI contents so the user doesn't
         // see them briefly when we pop off the StackView
-        stageSpinner.visible = false
-        stageLabel.visible = false
-        hintText.visible = false
+        loading.visible = false
 
         // Hide the window now that streaming has begun
         window.visible = false
@@ -139,7 +144,7 @@ Item {
         // middle of the animation on Windows, which looks very
         // obviously broken.
         interval: 100
-        onTriggered: stageSpinner.visible = true
+        onTriggered: loading.shown = true
     }
 
     Timer {
@@ -165,7 +170,7 @@ Item {
             // in the hintText control itself to synchronize
             // with Session.exec() which requires no concurrent
             // gamepad usage.
-            hintText.text = qsTr("Tip:") + " " + qsTr("Press %1 to disconnect your session").arg(SdlGamepadKeyNavigation.getConnectedGamepads() > 0 ?
+            loading.hint = qsTr("Tip:") + " " + qsTr("Press %1 to disconnect your session").arg(SdlGamepadKeyNavigation.getConnectedGamepads() > 0 ?
                                                   qsTr("Start+Select+L1+R1") : qsTr("Ctrl+Alt+Shift+Q"))
 
             // Stop GUI gamepad usage now
@@ -208,35 +213,15 @@ Item {
         sourceComponent: Item {}
     }
 
-    Row {
-        anchors.centerIn: parent
-        spacing: 5
-
-        BusyIndicator {
-            id: stageSpinner
-            running: visible
-            visible: false
-        }
-
-        Label {
-            id: stageLabel
-            height: stageSpinner.height
-            text: stageText
-            font.pointSize: 20
-            verticalAlignment: Text.AlignVCenter
-
-            wrapMode: Text.Wrap
-        }
-    }
-
-    Label {
-        id: hintText
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: 50
-        anchors.horizontalCenter: parent.horizontalCenter
-        font.pointSize: 18
-        verticalAlignment: Text.AlignVCenter
-
-        wrapMode: Text.Wrap
+    CouchLoading {
+        id: loading
+        anchors.fill: parent
+        boxart: parent.boxart
+        title: appName
+        hostName: parent.hostName
+        overline: isResume ? qsTr("RESUMING") : qsTr("STARTING")
+        status: stageText
+        // The host launches the game before the first stage starts
+        progress: 0.1 + 0.85 * Math.min(stagesStarted, stageCount) / stageCount
     }
 }

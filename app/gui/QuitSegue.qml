@@ -3,12 +3,16 @@ import QtQuick.Controls 2.2
 
 import ComputerManager 1.0
 import Session 1.0
+import "couch"
 
 Item {
     property string appName
     property var quitRunningAppFn
     property Session nextSession : null
     property string nextAppName : ""
+    property url boxart
+    property url nextBoxart
+    property string hostName
 
     property string stageText : qsTr("Quitting %1...").arg(appName)
 
@@ -24,7 +28,8 @@ Item {
         // If we're supposed to launch another game after this, do so now
         if (error === undefined && nextSession !== null) {
             var component = Qt.createComponent("StreamSegue.qml")
-            var segue = component.createObject(stackView, {"appName": nextAppName, "session": nextSession})
+            var segue = component.createObject(stackView, {"appName": nextAppName, "session": nextSession,
+                                                           "boxart": nextBoxart, "hostName": hostName})
             stackView.replace(segue)
         }
         else {
@@ -54,24 +59,14 @@ Item {
         ComputerManager.quitAppCompleted.disconnect(quitAppCompleted)
     }
 
-    Row {
-        anchors.centerIn: parent
-        spacing: 5
-
-        BusyIndicator {
-            id: stageSpinner
-            running: visible
-        }
-
-        Label {
-            id: stageLabel
-            height: stageSpinner.height
-            text: stageText
-            font.pointSize: 20
-            verticalAlignment: Text.AlignVCenter
-
-            wrapMode: Text.Wrap
-        }
+    CouchLoading {
+        anchors.fill: parent
+        boxart: parent.boxart
+        title: appName
+        hostName: parent.hostName
+        overline: qsTr("QUITTING")
+        status: stageText
+        shown: true
     }
 
     ErrorMessageDialog {

@@ -239,7 +239,8 @@ import AppModel 1.0; AppModel {}', parent, '')
             var segue = component.createObject(stackView, {
                                                    "appName": model.name,
                                                    "session": appModel.createSessionForApp(index),
-                                                   "isResume": runningId === model.appid
+                                                   "isResume": runningId === model.appid,
+                                                   "boxart": model.boxart
                                                })
             stackView.push(segue)
         }

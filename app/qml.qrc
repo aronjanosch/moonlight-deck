@@ -36,5 +36,6 @@
         <file>gui/couch/CouchSettings.qml</file>
         <file>gui/couch/CouchSettingsSection.qml</file>
         <file>gui/couch/CouchSettingRow.qml</file>
+        <file>gui/couch/CouchLoading.qml</file>
     </qresource>
 </RCC>
